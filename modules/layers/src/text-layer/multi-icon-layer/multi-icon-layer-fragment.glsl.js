@@ -25,7 +25,7 @@ precision highp float;
 
 uniform float opacity;
 uniform sampler2D iconsTexture;
-uniform float buffer;
+uniform float ubuffer;
 uniform bool sdf;
 uniform float alphaCutoff;
 uniform bool shouldDrawBackground;
@@ -44,7 +44,7 @@ void main(void) {
 
     // if enable sdf (signed distance fields)
     if (sdf) {
-      alpha = smoothstep(buffer - vGamma, buffer + vGamma, alpha);
+      alpha = smoothstep(ubuffer - vGamma, ubuffer + vGamma, alpha);
     }
 
     // Take the global opacity and the alpha from vColor into account for the alpha component
