@@ -17,15 +17,35 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-/* eslint-disable max-len */
 
-export {default as GreatCircleLayer} from './great-circle-layer/great-circle-layer';
-export {default as S2Layer} from './s2-layer/s2-layer';
-export {default as TileLayer} from './tile-layer/tile-layer';
-export {default as TripsLayer} from './trips-layer/trips-layer';
-export {default as H3ClusterLayer} from './h3-layers/h3-cluster-layer';
-export {default as H3HexagonLayer} from './h3-layers/h3-hexagon-layer';
-export {default as Tile3DLayer} from './tile-3d-layer/tile-3d-layer';
-export {default as TerrainLayer} from './terrain-layer/terrain-layer';
-export {default as MVTLayer} from './mvt-layer/mvt-layer';
-export {default as Roames3DLayer} from './roames-3d-layer/roames-3d-layer';
+// Inspired by screen-grid-layer vertex shader in deck.gl
+
+export default `\
+#define SHADER_NAME heatp-map-layer-vertex-shader
+
+uniform sampler2D maxTexture;
+uniform float intensity;
+uniform vec2 colorDomain;
+uniform float threshold;
+
+attribute vec3 positions;
+attribute vec2 texCoords;
+
+varying vec2 vTexCoords;
+varying float vIntensityMin;
+varying float vIntensityMax;
+
+void main(void) {
+  gl_Position = project_position_to_clipspace(positions, vec3(0.0), vec3(0.0));
+  vTexCoords = texCoords;
+  float maxValue = 200.; //texture2D(maxTexture, vec2(0.5)).r;
+  float minValue = maxValue * threshold;
+  if (colorDomain[1] > 0.) {
+    // if user specified custom domain use it.
+    maxValue = colorDomain[1];
+    minValue = colorDomain[0];
+  }
+  vIntensityMax = intensity / maxValue;
+  vIntensityMin = intensity / minValue;
+}
+`;

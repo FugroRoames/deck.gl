@@ -17,15 +17,38 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-/* eslint-disable max-len */
 
-export {default as GreatCircleLayer} from './great-circle-layer/great-circle-layer';
-export {default as S2Layer} from './s2-layer/s2-layer';
-export {default as TileLayer} from './tile-layer/tile-layer';
-export {default as TripsLayer} from './trips-layer/trips-layer';
-export {default as H3ClusterLayer} from './h3-layers/h3-cluster-layer';
-export {default as H3HexagonLayer} from './h3-layers/h3-hexagon-layer';
-export {default as Tile3DLayer} from './tile-3d-layer/tile-3d-layer';
-export {default as TerrainLayer} from './terrain-layer/terrain-layer';
-export {default as MVTLayer} from './mvt-layer/mvt-layer';
-export {default as Roames3DLayer} from './roames-3d-layer/roames-3d-layer';
+export default `\
+#define SHADER_NAME triangle-layer-fragment-shader
+
+precision highp float;
+
+uniform float opacity;
+uniform sampler2D texture;
+varying vec2 vTexCoords;
+uniform sampler2D colorTexture;
+
+varying float vIntensityMin;
+varying float vIntensityMax;
+
+vec4 getLinearColor(float value) {
+  float factor = clamp(value * vIntensityMax, 0., 1.);
+  vec4 color = texture2D(colorTexture, vec2(factor, 0.5));
+  color.a *= min(value * vIntensityMin, 1.0);
+  return color;
+}
+
+void main(void) {
+  float weight = texture2D(texture, vTexCoords).r;
+  // discard pixels with 0 weight.
+  if (weight <= 0.) {
+     discard;
+  }
+
+  vec4 linearColor = getLinearColor(weight);
+  linearColor.a *= opacity;
+
+  // vec4 linearColor = vec4(1., 0., 0., 1.);
+  gl_FragColor =linearColor;
+}
+`;
