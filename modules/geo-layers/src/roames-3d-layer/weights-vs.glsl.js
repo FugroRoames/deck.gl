@@ -1,4 +1,6 @@
 export default `\
+#define SHADER_NAME weight-vertex-shader
+
 attribute vec3 positions;
 // attribute vec4 colors;
 

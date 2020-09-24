@@ -21,9 +21,9 @@
 // Inspired by screen-grid-layer vertex shader in deck.gl
 
 export default `\
-#define SHADER_NAME heatp-map-layer-vertex-shader
+#define SHADER_NAME boresight-layer-vertex-shader
 
-uniform sampler2D maxTexture;
+// uniform sampler2D maxTexture;
 uniform float intensity;
 uniform vec2 colorDomain;
 uniform float threshold;
@@ -38,13 +38,13 @@ varying float vIntensityMax;
 void main(void) {
   gl_Position = project_position_to_clipspace(positions, vec3(0.0), vec3(0.0));
   vTexCoords = texCoords;
-  float maxValue = 200.; //texture2D(maxTexture, vec2(0.5)).r;
-  float minValue = maxValue * threshold;
-  if (colorDomain[1] > 0.) {
-    // if user specified custom domain use it.
-    maxValue = colorDomain[1];
-    minValue = colorDomain[0];
-  }
+  float maxValue = 10.; //texture2D(maxTexture, vec2(0.5)).r;
+  float minValue = -10.; //maxValue * threshold;
+  // if (colorDomain[1] > 0.) {
+  //   // if user specified custom domain use it.
+  //   maxValue = colorDomain[1];
+  //   minValue = colorDomain[0];
+  // }
   vIntensityMax = intensity / maxValue;
   vIntensityMin = intensity / minValue;
 }

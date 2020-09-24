@@ -17,16 +17,42 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-/* eslint-disable max-len */
 
-export {default as GreatCircleLayer} from './great-circle-layer/great-circle-layer';
-export {default as S2Layer} from './s2-layer/s2-layer';
-export {default as TileLayer} from './tile-layer/tile-layer';
-export {default as TripsLayer} from './trips-layer/trips-layer';
-export {default as H3ClusterLayer} from './h3-layers/h3-cluster-layer';
-export {default as H3HexagonLayer} from './h3-layers/h3-hexagon-layer';
-export {default as Tile3DLayer} from './tile-3d-layer/tile-3d-layer';
-export {default as TerrainLayer} from './terrain-layer/terrain-layer';
-export {default as MVTLayer} from './mvt-layer/mvt-layer';
-export {default as Roames3DLayer} from './roames-3d-layer/roames-3d-layer';
-// export {default as BoresightLayer} from './boresight-layer/boresight-layer';
+export default `\
+#define SHADER_NAME boresight-layer-fragment-shader
+
+precision highp float;
+
+uniform float opacity;
+uniform sampler2D textureone;
+uniform sampler2D texturetwo;
+varying vec2 vTexCoords;
+uniform sampler2D colorTexture;
+
+varying float vIntensityMin;
+varying float vIntensityMax;
+
+vec4 getLinearColor(float value) {
+  float factor = clamp(value * vIntensityMax, 0., 1.);
+  vec4 color = texture2D(colorTexture, vec2(factor, 0.5));
+  color.a *= min(value * vIntensityMin, 1.0);
+  return color;
+}
+
+void main(void) {
+  float weightone = texture2D(textureone, vTexCoords).r;
+  float weighttwo = texture2D(texturetwo, vTexCoords).r;
+
+  // discard pixels with 0 weight.
+  // height can technically go to negative if rotated in a large angle
+  // so need to do something smarter here
+  if (weightone <= 0. || weighttwo <= 0.) {
+     discard;
+  } 
+
+  vec4 linearColor = getLinearColor(weightone - weighttwo);
+  linearColor.a = 1.;
+
+  gl_FragColor =linearColor;
+}
+`;

@@ -47,8 +47,8 @@ void main(void) {
 
   vec4 linearColor = getLinearColor(weight);
   linearColor.a *= opacity;
-
-  // vec4 linearColor = vec4(1., 0., 0., 1.);
+  // linearColor.a = 1.;
+  // vec4 linearColor = vec4(1., 0., 0., .1);
   gl_FragColor =linearColor;
 }
 `;

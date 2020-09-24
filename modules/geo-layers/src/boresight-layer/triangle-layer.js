@@ -21,8 +21,8 @@
 import GL from '@luma.gl/constants';
 import {Model, Geometry} from '@luma.gl/core';
 import {Layer, project32} from '@deck.gl/core';
-import vs from './triangle-layer-vertex.glsl';
-import fs from './triangle-layer-fragment.glsl';
+import vs from './boresight-vs.glsl';
+import fs from './boresight-fs.glsl';
 
 const defaultProps = {
   count: 0, // number of triangles to be rendered
@@ -63,13 +63,12 @@ export default class TriangleLayer extends Layer {
 
   draw({uniforms}) {
     const {model} = this.state;
-
-    const {texture, maxTexture, colorTexture, intensity, threshold, colorDomain} = this.props;
+    const {textureone, texturetwo, colorTexture, intensity, threshold, colorDomain} = this.props;
     model
       .setUniforms({
         ...uniforms,
-        texture,
-        maxTexture,
+        textureone,
+        texturetwo,
         colorTexture,
         intensity,
         threshold,
