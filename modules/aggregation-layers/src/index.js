@@ -33,6 +33,4 @@ export {default as _GPUGridAggregator} from './utils/gpu-grid-aggregation/gpu-gr
 export {default as _CPUAggregator} from './utils/cpu-aggregator';
 export {default as _AggregationLayer} from './aggregation-layer';
 export {default as _BinSorter} from './utils/bin-sorter';
-export {
-  default as RoamesPointCloudLayer
-} from './roames-point-cloud-layer/roames-point-cloud-layer';
+export {default as RoamesHeightLayer} from './roames-height-layer/roames-height-layer';

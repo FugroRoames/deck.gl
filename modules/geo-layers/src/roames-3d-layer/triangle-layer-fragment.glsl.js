@@ -23,18 +23,16 @@ export default `\
 
 precision highp float;
 
-uniform float opacity;
 uniform sampler2D texture;
 varying vec2 vTexCoords;
 uniform sampler2D colorTexture;
 
-varying float vIntensityMin;
-varying float vIntensityMax;
+varying float minDiff;
+varying float maxDiff;
 
 vec4 getLinearColor(float value) {
-  float factor = clamp(value * vIntensityMax, 0., 1.);
+  float factor = clamp((value - minDiff)/(maxDiff - minDiff), 0., 1.);
   vec4 color = texture2D(colorTexture, vec2(factor, 0.5));
-  color.a *= min(value * vIntensityMin, 1.0);
   return color;
 }
 
@@ -46,9 +44,6 @@ void main(void) {
   }
 
   vec4 linearColor = getLinearColor(weight);
-  linearColor.a *= opacity;
-  // linearColor.a = 1.;
-  // vec4 linearColor = vec4(1., 0., 0., .1);
   gl_FragColor =linearColor;
 }
 `;

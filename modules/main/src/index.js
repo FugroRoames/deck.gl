@@ -101,7 +101,8 @@ export {
   PolygonLayer,
   SolidPolygonLayer,
   GeoJsonLayer,
-  TextLayer
+  TextLayer,
+  RoamesPointCloudLayer
 } from '@deck.gl/layers';
 
 export {
@@ -113,7 +114,7 @@ export {
   GPUGridLayer,
   AGGREGATION_OPERATION,
   HeatmapLayer,
-  RoamesPointCloudLayer
+  RoamesHeightLayer
 } from '@deck.gl/aggregation-layers';
 
 export {
@@ -126,7 +127,8 @@ export {
   Tile3DLayer,
   TerrainLayer,
   MVTLayer,
-  Roames3DLayer
+  Roames3DLayer,
+  BoresightLayer
 } from '@deck.gl/geo-layers';
 
 export {SimpleMeshLayer, ScenegraphLayer} from '@deck.gl/mesh-layers';

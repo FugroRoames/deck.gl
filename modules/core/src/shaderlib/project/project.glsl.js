@@ -226,4 +226,46 @@ bool project_needs_rotation(vec3 commonPosition, out mat3 transform) {
   }
   return false;
 }
+
+// Quaternion logic
+
+// Convert yaw / pitch / roll to quaternion
+vec4 toQaternion(float yaw, float pitch, float roll)
+{
+  float cy = cos(yaw * 0.5);
+  float sy = sin(yaw * 0.5);
+  float cp = cos(pitch * 0.5);
+  float sp = sin(pitch * 0.5);
+  float cr = cos(roll * 0.5);
+  float sr = sin(roll * 0.5);
+  return vec4(
+    sr*cp*cy - cr*sp*sy,
+    cr*sp*cy + sr*cp*sy,
+    cr*cp*sy - sr*sp*cy,
+    cr*cp*cy + sr*sp*sy
+  );
+}
+
+// quaternion multiplication
+vec4 qm(vec4 q1, vec4 q2)
+{
+  return vec4((q1.w * q2.x) + (q1.x * q2.w) + (q1.y * q2.z) - (q1.z * q2.y),
+              (q1.w * q2.y) - (q1.x * q2.z) + (q1.y * q2.w) + (q1.z * q2.x),
+              (q1.w * q2.z) + (q1.x * q2.y) - (q1.y * q2.x) + (q1.z * q2.w),
+              (q1.w * q2.w) - (q1.x * q2.x) - (q1.y * q2.y) - (q1.z * q2.z));
+}
+
+// quaternion inverse
+vec4 qi(vec4 q)
+{
+  q.xyz *= -1.;
+  return q;
+}
+
+// quaternion normalilze
+vec4 qNorm(vec4 q)
+{
+  float n = sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w);
+  return vec4(q.x/n, q.y/n, q.z/n, q.w/n);
+}
 `;

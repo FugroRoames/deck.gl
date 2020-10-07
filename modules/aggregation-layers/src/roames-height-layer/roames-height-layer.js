@@ -18,7 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-/* global setTimeout clearTimeout */
 import GL from '@luma.gl/constants';
 import {getParameters, FEATURES, hasFeatures} from '@luma.gl/core';
 import {AttributeManager, log} from '@deck.gl/core';
@@ -28,10 +27,11 @@ import {updateBounds, worldToCommonTextureBounds} from '../../../core/src/utils/
 
 const RESOLUTION = 2; // (number of common space pixels) / (number texels)
 const SIZE_2K = 2048;
-const ZOOM_DEBOUNCE = 500; // milliseconds
 
 const defaultProps = {
   getPosition: {type: 'accessor', value: x => x.position},
+  getGpsPosition: {type: 'accessor', value: x => x.gpsPosition},
+  getGpsDirection: {type: 'accessor', value: x => x.gpsDirection},
   radiusPixels: {type: 'number', min: 1, max: 100, value: 5},
   threshold: {type: 'number', min: 0, max: 1, value: 0.05},
   totalWeightsTransform: null
@@ -61,9 +61,15 @@ function normalizeData(data) {
   if (attributes.POSITION) {
     attributes.positions = attributes.POSITION;
   }
+  if (attributes.GPS_POSITION) {
+    attributes.gpsPositions = attributes.GPS_POSITION;
+  }
+  if (attributes.GPS_DIRECTION) {
+    attributes.gpsDirections = attributes.GPS_DIRECTION;
+  }
 }
 
-export default class RoamesPointCloudLayer extends AggregationLayer {
+export default class RoamesHeightLayer extends AggregationLayer {
   initializeState() {
     const {gl} = this.context;
     const {totalWeightsTransform} = this.props;
@@ -76,7 +82,18 @@ export default class RoamesPointCloudLayer extends AggregationLayer {
     super.initializeState(DIMENSIONS);
     this._setupTextureParams();
     this._setupAttributes();
-    this.setState({supported: true, totalWeightsTransform});
+    const quaternion = [0.0, 0.0, 0.0, 1.0];
+    const xTranslation = 0.0;
+    const yTranslation = 0.0;
+    const zTranslation = 0.0;
+    this.setState({
+      supported: true,
+      totalWeightsTransform,
+      quaternion,
+      xTranslation,
+      yTranslation,
+      zTranslation
+    });
   }
 
   shouldUpdateState({changeFlags}) {
@@ -111,22 +128,27 @@ export default class RoamesPointCloudLayer extends AggregationLayer {
       );
       this.setState(newState);
     }
-
-    if (changeFlags.dataChanged || changeFlags.boundsChanged) {
-      this._updateWeightmap();
-    } else if (changeFlags.viewportZoomChanged) {
-      this._debouncedUpdateWeightmap();
-    }
+    this._updateWeightmap();
 
     this.setState({zoom: opts.context.viewport.zoom});
   }
 
-  finalizeState() {
-    super.finalizeState();
-    const {updateTimer} = this.state;
-    /* eslint-disable no-unused-expressions */
-    updateTimer && clearTimeout(updateTimer);
-    /* eslint-enable no-unused-expressions */
+  updateRotation(xRotation, yRotation, zRotation) {
+    if (!this.state) {
+      return;
+    }
+    const xRotationRad = xRotation * (Math.PI / 180);
+    const yRotationRad = yRotation * (Math.PI / 180);
+    const zRotationRad = zRotation * (Math.PI / 180);
+    const quaternion = this._toQaternion(xRotationRad, yRotationRad, zRotationRad);
+    this.setState({quaternion});
+  }
+
+  updateTranslation(xTranslation, yTranslation, zTranslation) {
+    if (!this.state) {
+      return;
+    }
+    this.setState({xTranslation, yTranslation, zTranslation});
   }
 
   // PRIVATE
@@ -166,6 +188,20 @@ export default class RoamesPointCloudLayer extends AggregationLayer {
         fp64: this.use64bitPositions(),
         transition: true,
         accessor: 'getPosition'
+      },
+      gpsPositions: {
+        size: 3,
+        type: GL.DOUBLE,
+        fp64: this.use64bitPositions(),
+        transition: true,
+        accessor: 'getGpsPosition'
+      },
+      gpsDirections: {
+        size: 4,
+        type: GL.DOUBLE,
+        fp64: this.use64bitPositions(),
+        transition: true,
+        accessor: 'getGpsDirection'
       }
     });
 
@@ -176,11 +212,10 @@ export default class RoamesPointCloudLayer extends AggregationLayer {
     const {gl} = this.context;
     const textureSize = Math.min(SIZE_2K, getParameters(gl, gl.MAX_TEXTURE_SIZE));
     const floatTargetSupport = hasFeatures(gl, FEATURES.COLOR_ATTACHMENT_RGBA32F);
-    const weightsScale = floatTargetSupport ? 1 : 1 / 255;
-    this.setState({textureSize, weightsScale});
+    this.setState({textureSize});
     if (!floatTargetSupport) {
       log.warn(
-        `RoamesPointCloudLayer: ${
+        `RoamesHeightLayer: ${
           this.id
         } rendering to float texture not supported, fallingback to low precession format`
       )();
@@ -190,7 +225,15 @@ export default class RoamesPointCloudLayer extends AggregationLayer {
   _updateWeightmap() {
     const {radiusPixels, coordinateSystem, coordinateOrigin} = this.props;
     const {viewport} = this.context;
-    const {totalWeightsTransform, worldBounds, textureSize, weightsScale} = this.state;
+    const {
+      totalWeightsTransform,
+      worldBounds,
+      textureSize,
+      quaternion,
+      xTranslation,
+      yTranslation,
+      zTranslation
+    } = this.state;
 
     // convert world bounds to common using Layer's coordiante system and origin
     const commonBounds = worldToCommonTextureBounds(
@@ -205,7 +248,10 @@ export default class RoamesPointCloudLayer extends AggregationLayer {
       radiusPixels,
       commonBounds,
       textureWidth: textureSize,
-      weightsScale
+      quaternion,
+      xTranslation,
+      yTranslation,
+      zTranslation
     };
 
     // Attribute manager sets data array count as instaceCount on model
@@ -228,37 +274,21 @@ export default class RoamesPointCloudLayer extends AggregationLayer {
     this.setState({lastUpdate: Date.now()});
   }
 
-  _debouncedUpdateWeightmap(fromTimer = false) {
-    let {updateTimer} = this.state;
-    const {worldBounds, textureSize} = this.state;
-    const timeSinceLastUpdate = Date.now() - this.state.lastUpdate;
-
-    if (fromTimer) {
-      updateTimer = null;
-    }
-
-    if (timeSinceLastUpdate >= ZOOM_DEBOUNCE) {
-      // update
-      const newState = {};
-      updateBounds(
-        this.context.viewport,
-        worldBounds,
-        {textureSize, resolution: RESOLUTION},
-        newState,
-        true
-      );
-      this.setState(newState);
-      this._updateWeightmap();
-    } else if (!updateTimer) {
-      updateTimer = setTimeout(
-        this._debouncedUpdateWeightmap.bind(this, true),
-        ZOOM_DEBOUNCE - timeSinceLastUpdate
-      );
-    }
-
-    this.setState({updateTimer});
+  _toQaternion(xRotationRad, yRotationRad, zRotationRad) {
+    const cr = Math.cos(xRotationRad * 0.5);
+    const sr = Math.sin(xRotationRad * 0.5);
+    const cp = Math.cos(yRotationRad * 0.5);
+    const sp = Math.sin(yRotationRad * 0.5);
+    const cy = Math.cos(zRotationRad * 0.5);
+    const sy = Math.sin(zRotationRad * 0.5);
+    return [
+      sr * cp * cy - cr * sp * sy,
+      cr * sp * cy + sr * cp * sy,
+      cr * cp * sy - sr * sp * cy,
+      cr * cp * cy + sr * sp * sy
+    ];
   }
 }
 
-RoamesPointCloudLayer.layerName = 'RoamesPointCloudLayer';
-RoamesPointCloudLayer.defaultProps = defaultProps;
+RoamesHeightLayer.layerName = 'RoamesHeightLayer';
+RoamesHeightLayer.defaultProps = defaultProps;

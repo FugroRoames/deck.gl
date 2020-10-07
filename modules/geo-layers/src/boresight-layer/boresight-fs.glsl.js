@@ -28,31 +28,24 @@ uniform sampler2D textureone;
 uniform sampler2D texturetwo;
 varying vec2 vTexCoords;
 uniform sampler2D colorTexture;
-
-varying float vIntensityMin;
-varying float vIntensityMax;
+uniform vec2 colorDomain;
 
 vec4 getLinearColor(float value) {
-  float factor = clamp(value * vIntensityMax, 0., 1.);
+  float factor = clamp((value - colorDomain[0])/(colorDomain[1] - colorDomain[0]), 0., 1.);
   vec4 color = texture2D(colorTexture, vec2(factor, 0.5));
-  color.a *= min(value * vIntensityMin, 1.0);
   return color;
 }
 
 void main(void) {
   float weightone = texture2D(textureone, vTexCoords).r;
   float weighttwo = texture2D(texturetwo, vTexCoords).r;
-
   // discard pixels with 0 weight.
-  // height can technically go to negative if rotated in a large angle
-  // so need to do something smarter here
+  // note: height can technically go to negative if rotated in a large angle
   if (weightone <= 0. || weighttwo <= 0.) {
-     discard;
+    discard;
   } 
 
-  vec4 linearColor = getLinearColor(weightone - weighttwo);
-  linearColor.a = 1.;
-
-  gl_FragColor =linearColor;
+  vec4 linearColor = getLinearColor(weighttwo - weightone);
+  gl_FragColor = linearColor;
 }
 `;
