@@ -19,19 +19,25 @@ import {
 
 const defaultProps = {
   getPointColor: [0, 0, 0],
+  colorDomain: {type: 'array', value: [-10, 10], optional: true},
   pointSize: 1.0,
   colorRange: null,
   datas: null,
   loadOptions: {},
   loader: Tiles3DLoader,
   boundingBox: false,
+  points: false,
+  gpsPoints: false,
   onTilesetLoad: tileset3d => {},
   onTileLoad: tileHeader => {},
   onTileUnload: tileHeader => {},
   onTileError: (tile, message, url) => {},
   xRotation: null,
   yRotation: null,
-  zRotation: null
+  zRotation: null,
+  xTranslation: null,
+  yTranslation: null,
+  zTranslation: null
 };
 
 const TEXTURE_OPTIONS = {
@@ -88,71 +94,108 @@ export default class BoresightLayer extends CompositeLayer {
     ) {
       this.setState({rotated: true});
     }
+
+    if (
+      props.xTranslation !== oldProps.xTranslation ||
+      props.yTranslation !== oldProps.yTranslation ||
+      props.zTranslation !== oldProps.zTranslation
+    ) {
+      this.setState({translated: true});
+    }
+
+    if (
+      props.boundingBox !== oldProps.boundingBox ||
+      props.points !== oldProps.points ||
+      props.gpsPoints !== oldProps.gpsPoints
+    ) {
+      this.setState({subLayerToggled: true});
+    }
     this._updateTextureRenderingBounds();
   }
 
+  /* eslint-disable complexity, max-statements */
   renderLayers() {
     const {layerMap} = this.state;
+    const {data, boundingBox, points, gpsPoints} = this.props;
 
-    let subLayers = [];
+    const subLayers = [];
 
     // Calculate the texture for each tiles 3d dataset
     // call Roames3DLayer for each dataset
-    // hack to get around dupliate layer id
-    let i = 0;
-    subLayers = this.props.data
-      .map(dataURL => {
-        let layer = layerMap[i] && layerMap[i].layer;
-        // render selected tiles
-        // create layer
-        if (i === 0) {
-          if (!layer) {
-            layer = new Roames3DLayer({
-              id: `${this.id}-roames-3d-layer-${i}`,
-              data: dataURL,
-              loader: this.props.loader,
-              loadOptions: this.props.loadOptions,
-              colorRange: this.props.colorRange,
-              boundingBox: false,
-              onTilesetLoad: this.props.onTilesetLoad
-            });
-            layerMap[i] = {layer, dataURL};
-          } else if (this.state.rotated) {
-            layer.updateXRotation(this.props.xRotation);
-            layer.updateYRotation(this.props.yRotation);
-            layer.updateZRotation(this.props.zRotation);
-            this.setState({rotated: false});
-          }
-        } else if (!layer) {
-          layer = new Roames3DLayer({
-            id: `${this.id}-roames-3d-layer-${i}`,
-            data: dataURL,
-            loader: this.props.loader,
-            loadOptions: this.props.loadOptions,
-            colorRange: this.props.colorRange,
-            boundingBox: false
-          });
-          layerMap[i] = {layer, dataURL};
-        }
-        // update layer visibility
-        if (layer && layer.props && !layer.props.visible) {
-          // Still has GPU resource but visibility is turned off so turn it back on so we can render it.
-          layer = layer.clone({visible: true});
-          layerMap[i].layer = layer;
-        }
+    // Flight line 1
+    let layer = layerMap[0] && layerMap[0].layer;
 
-        i++;
-        return layer;
-      })
-      .filter(Boolean);
+    if (!layer) {
+      layer = new Roames3DLayer({
+        id: `${this.id}-roames-3d-layer-${0}`,
+        data: data[0],
+        loader: this.props.loader,
+        loadOptions: this.props.loadOptions,
+        colorRange: this.props.colorRange,
+        boundingBox,
+        gpsPoints,
+        points,
+        onTilesetLoad: this.props.onTilesetLoad
+      });
+      layerMap[0] = {layer, dataURL: data[0]};
+    } else if (this.state.rotated) {
+      layer.updateRotation(this.props.xRotation, this.props.yRotation, this.props.zRotation);
+      this.setState({rotated: false});
+    } else if (this.state.translated) {
+      layer.updateTranslation(
+        this.props.xTranslation,
+        this.props.yTranslation,
+        this.props.zTranslation
+      );
+      this.setState({translated: false});
+    } else if (this.state.subLayerToggled) {
+      layer.updateLayerToggle(boundingBox, points, gpsPoints);
+    }
 
+    if (layer && layer.props && !layer.props.visible) {
+      // Still has GPU resource but visibility is turned off so turn it back on so we can render it.
+      layer = layer.clone({visible: true});
+      layerMap[0].layer = layer;
+    }
+
+    subLayers.push(layer);
+
+    // Flight line 2
+    layer = layerMap[1] && layerMap[1].layer;
+
+    if (!layer) {
+      layer = new Roames3DLayer({
+        id: `${this.id}-roames-3d-layer-${1}`,
+        data: data[1],
+        loader: this.props.loader,
+        loadOptions: this.props.loadOptions,
+        colorRange: this.props.colorRange,
+        boundingBox,
+        gpsPoints,
+        points
+      });
+      layerMap[1] = {layer, dataURL: data[1]};
+    } else if (this.state.subLayerToggled) {
+      layer.updateLayerToggle(boundingBox, points, gpsPoints);
+    }
+
+    if (layer && layer.props && !layer.props.visible) {
+      // Still has GPU resource but visibility is turned off so turn it back on so we can render it.
+      layer = layer.clone({visible: true});
+      layerMap[1].layer = layer;
+    }
+
+    subLayers.push(layer);
+
+    // Get the updated textures for each layer
     const textures = [];
-    subLayers.map(layer => {
-      textures.push(layer.getTexture());
+    subLayers.map(r3dlayer => {
+      textures.push(r3dlayer.getTexture());
     });
 
     const {triPositionBuffer, triTexCoordBuffer} = this.state;
 
+    // Send the textures to the Triangle layer which will diff the values (height) and render
     if (textures) {
       subLayers.push(
         new TriangleLayer(
@@ -171,14 +214,14 @@ export default class BoresightLayer extends CompositeLayer {
             colorTexture: this.state.colorTexture,
             textureone: textures[0],
             texturetwo: textures[1],
-            intensity: 1,
-            threshold: 0.05
+            colorDomain: this.props.colorDomain
           }
         )
       );
     }
     return subLayers;
   }
+  /* eslint-enable complexity, max-statements */
 
   _createBuffers() {
     const {gl} = this.context;

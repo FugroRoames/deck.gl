@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import App from 'website-roames/roames3dlayer/app';
+import App from 'website-roames/boresight-layer/app';
 import {CesiumIonLoader, Tiles3DLoader} from '@loaders.gl/3d-tiles';
 
 import {withPrefix} from 'gatsby';
@@ -9,9 +9,21 @@ import makeExample from '../components/example';
 class BoresightDemo extends Component {
   static title = 'DZ - Flight Path 1 vs Flight Path 2';
   static parameters = {
-    x: {displayName: 'X Rotation', value: 0, step: 0.001, type: 'range', min: -0.2, max: 0.2},
-    y: {displayName: 'Y Rotation', value: 0, step: 0.001, type: 'range', min: -0.2, max: 0.2},
-    z: {displayName: 'Z Rotation', value: 0, step: 0.01, type: 'range', min: -50, max: 50}
+    rotX: {displayName: 'Rotation X', value: 0, step: 0.001, type: 'range', min: -10, max: 10},
+    rotY: {displayName: 'Rotation Y', value: 0, step: 0.001, type: 'range', min: -10, max: 10},
+    rotZ: {displayName: 'Rotation Z', value: 0, step: 0.001, type: 'range', min: -10, max: 10},
+    tranX: {displayName: 'Translation X', value: 0, step: 0.001, type: 'range', min: -100, max: 100},
+    tranY: {displayName: 'Translation Y', value: 0, step: 0.001, type: 'range', min: -100, max: 100},
+    tranZ: {displayName: 'Translation Z', value: 0, step: 0.001, type: 'range', min: -100, max: 100},
+    colorMin: {displayName: 'Color Min', value: -10},
+    colorMax: {displayName: 'Color Max', value: 10},
+    data1: {displayName: 'Flight line 1', value: "https://d3hwnz5sahda3g.cloudfront.net/flightline2/tileset.json"},
+    data2: {displayName: 'Flight line 2', value: "https://d3hwnz5sahda3g.cloudfront.net/flightline1/tileset.json"},
+    boundingBox: {displayName: 'Bounding Box', value: false, type: 'checkbox'},
+    points: {displayName: 'Points', value: false, type: 'checkbox'},
+    gpsPoints: {displayName: 'GPS Points', value: false, type: 'checkbox'}
+
+    // https://roames-hpc-home.s3-ap-southeast-2.amazonaws.com/users/peteroloughlin/gpspos2/tileset.json
   };
   
   static mapStyle = 'mapbox://styles/mapbox/light-v9';
@@ -30,17 +42,35 @@ class BoresightDemo extends Component {
 
   render() {
     const {params, data} = this.props;
-    const x = params.x.value;
-    const y = params.y.value;
-    const z = params.z.value;
+    const rotX = params.rotX.value;
+    const rotY = params.rotY.value;
+    const rotZ = params.rotZ.value;
+    const tranX = params.tranX.value;
+    const tranY = params.tranY.value;
+    const tranZ = params.tranZ.value;
+    const colorMin = params.colorMin.value;
+    const colorMax = params.colorMax.value;
+    const data1 = params.data1.value;
+    const data2 = params.data2.value;
+    const boundingBox = params.boundingBox.value;
+    const points = params.points.value;
+    const gpsPoints = params.gpsPoints.value;
+    
+    
     return (
       <App
         {...this.props}
-        // data={['https://assets.cesium.com/43978/tileset.json', 'https://assets.cesium.com/43978/tileset.json']}
-        data={["https://roames-hpc-home.s3-ap-southeast-2.amazonaws.com/users/peteroloughlin/tile3dtest4/tileset.json", "https://roames-hpc-home.s3-ap-southeast-2.amazonaws.com/users/peteroloughlin/tile3dtest3/tileset.json"]}
-        x={x}
-        y={y}
-        z={z}
+        data={[data1, data2]}
+        colorDomain={[colorMin, colorMax]}
+        x={rotX}
+        y={rotY}
+        z={rotZ}
+        xT={tranX}
+        yT={tranY}
+        zT={tranZ}
+        boundingBox={boundingBox}
+        points={points}
+        gpsPoints={gpsPoints}
         loader={Tiles3DLoader}
         loadOptions={{}}
         // loader={CesiumIonLoader}

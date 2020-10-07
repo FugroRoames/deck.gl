@@ -14,7 +14,9 @@ const INITIAL_VIEW_STATE = {
   latitude: -37.812765742471754,
   zoom: 11,
   bearing: 0,
-  pitch: 30
+  pitch: 0
+  // maxPitch: 90,
+  // maxZoom: 17
 };
 
 export default function App({
@@ -22,6 +24,12 @@ export default function App({
   x = null,
   y = null,
   z = null,
+  xT = null,
+  yT = null,
+  zT = null,
+  boundingBox = false,
+  points = false,
+  gpsPoints = false,
   data = [FLIGHT_ONE_URL, FLIGHT_TWO_URL],
   loader = Tiles3DLoader,
   loadOptions = {},
@@ -34,7 +42,8 @@ export default function App({
     [99, 253, 97],
     [9, 153, 3],
     [0, 0, 200]
-  ]
+  ],
+  colorDomain = [-10, 10]
 }) {
   const [initialViewState, setInitialViewState] = useState(INITIAL_VIEW_STATE);
 
@@ -56,10 +65,16 @@ export default function App({
       loader,
       loadOptions,
       colorRange,
-      boundingBox: false,
       xRotation: x,
       yRotation: y,
       zRotation: z,
+      xTranslation: xT,
+      yTranslation: yT,
+      zTranslation: zT,
+      boundingBox,
+      points,
+      gpsPoints,
+      colorDomain,
       onTilesetLoad
     })
   ];

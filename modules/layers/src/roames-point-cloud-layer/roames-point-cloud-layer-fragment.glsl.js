@@ -18,18 +18,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Inspired by screen-grid-layer vertex shader in deck.gl
-
 export default `\
-#define SHADER_NAME boresight-layer-vertex-shader
+#define SHADER_NAME roames-point-cloud-layer-fragment-shader
 
-attribute vec3 positions;
-attribute vec2 texCoords;
+precision highp float;
 
-varying vec2 vTexCoords;
+varying vec4 vColor;
+varying vec2 unitPosition;
 
 void main(void) {
-  gl_Position = project_position_to_clipspace(positions, vec3(0.0), vec3(0.0));
-  vTexCoords = texCoords;
+  geometry.uv = unitPosition;
+
+  float distToCenter = length(unitPosition);
+
+  if (distToCenter > 1.0) {
+    discard;
+  }
+
+  gl_FragColor = vColor;
+  DECKGL_FILTER_COLOR(gl_FragColor, geometry);
 }
 `;
