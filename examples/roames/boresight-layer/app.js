@@ -6,9 +6,8 @@ import DeckGL from '@deck.gl/react';
 import {BoresightLayer} from '@deck.gl/geo-layers';
 import {Tiles3DLoader} from '@loaders.gl/3d-tiles';
 
-const FLIGHT_ONE_URL = `https://roames-hpc-home.s3-ap-southeast-2.amazonaws.com/users/peteroloughlin/tile3dtest4/tileset.json`;
-const FLIGHT_TWO_URL = `https://roames-hpc-home.s3-ap-southeast-2.amazonaws.com/users/peteroloughlin/tile3dtest3/tileset.json`;
-
+const FLIGHT_ONE_URL = `https://d3hwnz5sahda3g.cloudfront.net/flightline2/tileset.json`;
+const FLIGHT_TWO_URL = `https://d3hwnz5sahda3g.cloudfront.net/flightline1/tileset.json`;
 const INITIAL_VIEW_STATE = {
   longitude: 144.94345786971536,
   latitude: -37.812765742471754,
@@ -30,7 +29,32 @@ export default function App({
   boundingBox = false,
   points = false,
   gpsPoints = false,
-  data = [FLIGHT_ONE_URL, FLIGHT_TWO_URL],
+  data = {
+    [FLIGHT_ONE_URL]: {
+      rotation: {
+        xRotation: x,
+        yRotation: y,
+        zRotation: z
+      },
+      translation: {
+        xTranslation: xT,
+        yTranslation: yT,
+        zTranslation: zT
+      }
+    },
+    [FLIGHT_TWO_URL]: {
+      rotation: {
+        xRotation: 0,
+        yRotation: 0,
+        zRotation: 0
+      },
+      translation: {
+        xTranslation: 0,
+        yTranslation: 0,
+        zTranslation: 0
+      }
+    }
+  },
   loader = Tiles3DLoader,
   loadOptions = {},
   colorRange = [

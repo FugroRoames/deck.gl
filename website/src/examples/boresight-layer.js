@@ -9,23 +9,50 @@ import makeExample from '../components/example';
 class BoresightDemo extends Component {
   static title = 'DZ - Flight Path 1 vs Flight Path 2';
   static parameters = {
-    rotX: {displayName: 'Rotation X', value: 0, step: 0.001, type: 'range', min: -10, max: 10},
+    rotX: {displayName: 'Rotation X', value: 0, step: 0.001, type: 'range', min: -180, max: 180},
     rotY: {displayName: 'Rotation Y', value: 0, step: 0.001, type: 'range', min: -10, max: 10},
     rotZ: {displayName: 'Rotation Z', value: 0, step: 0.001, type: 'range', min: -10, max: 10},
-    tranX: {displayName: 'Translation X', value: 0, step: 0.001, type: 'range', min: -100, max: 100},
-    tranY: {displayName: 'Translation Y', value: 0, step: 0.001, type: 'range', min: -100, max: 100},
-    tranZ: {displayName: 'Translation Z', value: 0, step: 0.001, type: 'range', min: -100, max: 100},
+    tranX: {
+      displayName: 'Translation X',
+      value: 0,
+      step: 0.001,
+      type: 'range',
+      min: -100,
+      max: 100
+    },
+    tranY: {
+      displayName: 'Translation Y',
+      value: 0,
+      step: 0.001,
+      type: 'range',
+      min: -100,
+      max: 100
+    },
+    tranZ: {
+      displayName: 'Translation Z',
+      value: 0,
+      step: 0.001,
+      type: 'range',
+      min: -100,
+      max: 100
+    },
     colorMin: {displayName: 'Color Min', value: -10},
     colorMax: {displayName: 'Color Max', value: 10},
-    data1: {displayName: 'Flight line 1', value: "https://d3hwnz5sahda3g.cloudfront.net/flightline2/tileset.json"},
-    data2: {displayName: 'Flight line 2', value: "https://d3hwnz5sahda3g.cloudfront.net/flightline1/tileset.json"},
+    data1: {
+      displayName: 'Flight line 1',
+      value: 'https://d3hwnz5sahda3g.cloudfront.net/flightline2/tileset.json'
+    },
+    data2: {
+      displayName: 'Flight line 2',
+      value: 'https://d3hwnz5sahda3g.cloudfront.net/flightline1/tileset.json'
+    },
     boundingBox: {displayName: 'Bounding Box', value: false, type: 'checkbox'},
     points: {displayName: 'Points', value: false, type: 'checkbox'},
     gpsPoints: {displayName: 'GPS Points', value: false, type: 'checkbox'}
 
     // https://roames-hpc-home.s3-ap-southeast-2.amazonaws.com/users/peteroloughlin/gpspos2/tileset.json
   };
-  
+
   static mapStyle = 'mapbox://styles/mapbox/light-v9';
 
   static renderInfo(meta) {
@@ -33,7 +60,11 @@ class BoresightDemo extends Component {
       <div>
         <p>Point cloud to DZ.</p>
         <div>
-          <img src={withPrefix('/images/dz_boresight.png')} alt="color scale" style={{height: 8, width: '100%'}} />
+          <img
+            src={withPrefix('/images/dz_boresight.png')}
+            alt="color scale"
+            style={{height: 8, width: '100%'}}
+          />
         </div>
         <p>Change Flight Path 1 Rotation</p>
       </div>
@@ -55,12 +86,36 @@ class BoresightDemo extends Component {
     const boundingBox = params.boundingBox.value;
     const points = params.points.value;
     const gpsPoints = params.gpsPoints.value;
-    
-    
+
     return (
       <App
         {...this.props}
-        data={[data1, data2]}
+        data={{
+          [data1]: {
+            rotation: {
+              xRotation: rotX,
+              yRotation: rotY,
+              zRotation: rotZ
+            },
+            translation: {
+              xTranslation: tranX,
+              yTranslation: tranY,
+              zTranslation: tranZ
+            }
+          },
+          [data2]: {
+            rotation: {
+              xRotation: 0,
+              yRotation: 0,
+              zRotation: 0
+            },
+            translation: {
+              xTranslation: 0,
+              yTranslation: 0,
+              zTranslation: 0
+            }
+          }
+        }}
         colorDomain={[colorMin, colorMax]}
         x={rotX}
         y={rotY}
