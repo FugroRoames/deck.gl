@@ -22,7 +22,7 @@ const defaultProps = {
   colorDomain: {type: 'array', value: [-10, 10], optional: true},
   pointSize: 1.0,
   colorRange: null,
-  datas: null,
+  data: null,
   loadOptions: {},
   loader: Tiles3DLoader,
   boundingBox: false,
@@ -75,7 +75,7 @@ export default class BoresightLayer extends CompositeLayer {
 
     // update state everytime ..?
     const {viewport} = this.context;
-    const {worldBounds, textureSize} = this.state;
+    const {worldBounds, textureSize, layerMap} = this.state;
 
     // if (changeFlags.viewportChanged) {
     const newState = {};
@@ -87,20 +87,25 @@ export default class BoresightLayer extends CompositeLayer {
       this._updateColorTexture(opts);
     }
 
-    if (
-      props.xRotation !== oldProps.xRotation ||
-      props.yRotation !== oldProps.yRotation ||
-      props.zRotation !== oldProps.zRotation
-    ) {
-      this.setState({rotated: true});
-    }
+    if (oldProps.data && props.data !== oldProps.data) {
+      for (const key in props.data) {
+        const rotation = props.data[key].rotation;
+        const oldRotation = oldProps.data[key].rotation;
 
-    if (
-      props.xTranslation !== oldProps.xTranslation ||
-      props.yTranslation !== oldProps.yTranslation ||
-      props.zTranslation !== oldProps.zTranslation
-    ) {
-      this.setState({translated: true});
+        if (this._rotationChanged(rotation, oldRotation)) {
+          layerMap[key].rotated = true;
+        } else {
+          layerMap[key].rotated = false;
+        }
+
+        const translation = props.data[key].translation;
+        const oldTranslation = oldProps.data[key].translation;
+        if (this._translationChanged(translation, oldTranslation)) {
+          layerMap[key].translated = true;
+        } else {
+          layerMap[key].translated = false;
+        }
+      }
     }
 
     if (
@@ -119,73 +124,42 @@ export default class BoresightLayer extends CompositeLayer {
     const {data, boundingBox, points, gpsPoints} = this.props;
 
     const subLayers = [];
-
     // Calculate the texture for each tiles 3d dataset
     // call Roames3DLayer for each dataset
-    // Flight line 1
-    let layer = layerMap[0] && layerMap[0].layer;
+    for (const dataUrl in data) {
+      const transforms = data[dataUrl];
+      let layer = layerMap[dataUrl] && layerMap[dataUrl].layer;
+      if (!layer) {
+        layer = new Roames3DLayer({
+          id: `${this.id}-roames-3d-layer-${dataUrl}`,
+          data: dataUrl,
+          loader: this.props.loader,
+          loadOptions: this.props.loadOptions,
+          colorRange: this.props.colorRange,
+          boundingBox,
+          gpsPoints,
+          points,
+          onTilesetLoad: this.props.onTilesetLoad
+        });
+        layerMap[dataUrl] = {layer, dataURL: dataUrl, rotated: false, translated: false};
+      } else if (layerMap[dataUrl].rotated) {
+        const rot = transforms.rotation;
+        layer.updateRotation(rot.xRotation, rot.yRotation, rot.zRotation);
+      } else if (layerMap[dataUrl].translated) {
+        const tran = transforms.translation;
+        layer.updateTranslation(tran.xTranslation, tran.yTranslation, tran.zTranslation);
+      } else if (this.state.subLayerToggled) {
+        layer.updateLayerToggle(boundingBox, points, gpsPoints);
+      }
 
-    if (!layer) {
-      layer = new Roames3DLayer({
-        id: `${this.id}-roames-3d-layer-${0}`,
-        data: data[0],
-        loader: this.props.loader,
-        loadOptions: this.props.loadOptions,
-        colorRange: this.props.colorRange,
-        boundingBox,
-        gpsPoints,
-        points,
-        onTilesetLoad: this.props.onTilesetLoad
-      });
-      layerMap[0] = {layer, dataURL: data[0]};
-    } else if (this.state.rotated) {
-      layer.updateRotation(this.props.xRotation, this.props.yRotation, this.props.zRotation);
-      this.setState({rotated: false});
-    } else if (this.state.translated) {
-      layer.updateTranslation(
-        this.props.xTranslation,
-        this.props.yTranslation,
-        this.props.zTranslation
-      );
-      this.setState({translated: false});
-    } else if (this.state.subLayerToggled) {
-      layer.updateLayerToggle(boundingBox, points, gpsPoints);
+      if (layer && layer.props && !layer.props.visible) {
+        // Still has GPU resource but visibility is turned off so turn it back on so we can render it.
+        layer = layer.clone({visible: true});
+        layerMap[dataUrl].layer = layer;
+      }
+
+      subLayers.push(layer);
     }
-
-    if (layer && layer.props && !layer.props.visible) {
-      // Still has GPU resource but visibility is turned off so turn it back on so we can render it.
-      layer = layer.clone({visible: true});
-      layerMap[0].layer = layer;
-    }
-
-    subLayers.push(layer);
-
-    // Flight line 2
-    layer = layerMap[1] && layerMap[1].layer;
-
-    if (!layer) {
-      layer = new Roames3DLayer({
-        id: `${this.id}-roames-3d-layer-${1}`,
-        data: data[1],
-        loader: this.props.loader,
-        loadOptions: this.props.loadOptions,
-        colorRange: this.props.colorRange,
-        boundingBox,
-        gpsPoints,
-        points
-      });
-      layerMap[1] = {layer, dataURL: data[1]};
-    } else if (this.state.subLayerToggled) {
-      layer.updateLayerToggle(boundingBox, points, gpsPoints);
-    }
-
-    if (layer && layer.props && !layer.props.visible) {
-      // Still has GPU resource but visibility is turned off so turn it back on so we can render it.
-      layer = layer.clone({visible: true});
-      layerMap[1].layer = layer;
-    }
-
-    subLayers.push(layer);
 
     // Get the updated textures for each layer
     const textures = [];
@@ -277,6 +251,28 @@ export default class BoresightLayer extends CompositeLayer {
       });
     }
     this.setState({colorTexture});
+  }
+
+  _rotationChanged(rot1, rot2) {
+    if (
+      rot1.xRotation !== rot2.xRotation ||
+      rot1.yRotation !== rot2.yRotation ||
+      rot1.zRotation !== rot2.zRotation
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  _translationChanged(tran1, tran2) {
+    if (
+      tran1.xTranslation !== tran2.xTranslation ||
+      tran1.yTranslation !== tran2.yTranslation ||
+      tran1.zTranslation !== tran2.zTranslation
+    ) {
+      return true;
+    }
+    return false;
   }
 }
 
