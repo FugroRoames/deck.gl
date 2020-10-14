@@ -23,7 +23,7 @@ if [ -f .yarn/bin/yarn ]; then
     install_yarn
   else
     echo "Correct version of yarn found"
-    yarn --version
+    .yarn/bin/yarn --version
   fi
 else
   echo "The file .yarn/bin/yarn does not exist, installing yarn".
