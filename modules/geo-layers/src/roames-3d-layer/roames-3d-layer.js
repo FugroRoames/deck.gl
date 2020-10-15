@@ -38,7 +38,17 @@ const defaultProps = {
   onTilesetLoad: tileset3d => {},
   onTileLoad: tileHeader => {},
   onTileUnload: tileHeader => {},
-  onTileError: (tile, message, url) => {}
+  onTileError: (tile, message, url) => {},
+  xRotation: 0,
+  yRotation: 0,
+  zRotation: 0,
+  xTranslation: 0,
+  yTranslation: 0,
+  zTranslation: 0,
+  height: true,
+  boundingBox: false,
+  points: false,
+  gpsPoints: false
 };
 
 const TEXTURE_OPTIONS = {
@@ -72,14 +82,30 @@ export default class Roames3DLayer extends CompositeLayer {
     this._createTransform();
     this._createBuffers();
     // setting initial transformation information
+    const {
+      xRotation,
+      yRotation,
+      zRotation,
+      xTranslation,
+      yTranslation,
+      zTranslation,
+      height,
+      boundingBox,
+      points,
+      gpsPoints
+    } = this.props;
+
     this.setState({
-      xRotation: 0.0,
-      yRotation: 0.0,
-      zRotation: 0.0,
-      height: true,
-      boundingBox: false,
-      points: false,
-      gpsPoints: false
+      xRotation,
+      yRotation,
+      zRotation,
+      xTranslation,
+      yTranslation,
+      zTranslation,
+      height,
+      boundingBox,
+      points,
+      gpsPoints
     });
   }
 
@@ -420,6 +446,7 @@ export default class Roames3DLayer extends CompositeLayer {
     }
 
     const {getPointColor} = this.props;
+    const {xRotation, yRotation, zRotation, xTranslation, yTranslation, zTranslation} = this.state;
     const SubLayerClass = this.getSubLayerClass('roamesheight', RoamesHeightLayer);
 
     return new SubLayerClass(
@@ -442,7 +469,12 @@ export default class Roames3DLayer extends CompositeLayer {
         coordinateSystem: COORDINATE_SYSTEM.METER_OFFSETS,
         coordinateOrigin: cartographicOrigin,
         modelMatrix,
-
+        xRotation,
+        yRotation,
+        zRotation,
+        xTranslation,
+        yTranslation,
+        zTranslation,
         getColor: constantRGBA || getPointColor
       }
     );

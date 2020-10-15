@@ -34,7 +34,13 @@ const defaultProps = {
   getGpsDirection: {type: 'accessor', value: x => x.gpsDirection},
   radiusPixels: {type: 'number', min: 1, max: 100, value: 5},
   threshold: {type: 'number', min: 0, max: 1, value: 0.05},
-  totalWeightsTransform: null
+  totalWeightsTransform: null,
+  xRotation: 0,
+  yRotation: 0,
+  zRotation: 0,
+  xTranslation: 0,
+  yTranslation: 0,
+  zTranslation: 0
 };
 
 const REQUIRED_FEATURES = [
@@ -82,10 +88,10 @@ export default class RoamesHeightLayer extends AggregationLayer {
     super.initializeState(DIMENSIONS);
     this._setupTextureParams();
     this._setupAttributes();
-    const quaternion = [0.0, 0.0, 0.0, 1.0];
-    const xTranslation = 0.0;
-    const yTranslation = 0.0;
-    const zTranslation = 0.0;
+    const {xRotation, yRotation, zRotation, xTranslation, yTranslation, zTranslation} = this.props;
+
+    const quaternion = this._toQaternion(xRotation, yRotation, zRotation);
+
     this.setState({
       supported: true,
       totalWeightsTransform,
@@ -137,10 +143,7 @@ export default class RoamesHeightLayer extends AggregationLayer {
     if (!this.state) {
       return;
     }
-    const xRotationRad = xRotation * (Math.PI / 180);
-    const yRotationRad = yRotation * (Math.PI / 180);
-    const zRotationRad = zRotation * (Math.PI / 180);
-    const quaternion = this._toQaternion(xRotationRad, yRotationRad, zRotationRad);
+    const quaternion = this._toQaternion(xRotation, yRotation, zRotation);
     this.setState({quaternion});
   }
 
@@ -274,7 +277,11 @@ export default class RoamesHeightLayer extends AggregationLayer {
     this.setState({lastUpdate: Date.now()});
   }
 
-  _toQaternion(xRotationRad, yRotationRad, zRotationRad) {
+  _toQaternion(xRotation, yRotation, zRotation) {
+    const xRotationRad = xRotation * (Math.PI / 180);
+    const yRotationRad = yRotation * (Math.PI / 180);
+    const zRotationRad = zRotation * (Math.PI / 180);
+
     const cr = Math.cos(xRotationRad * 0.5);
     const sr = Math.sin(xRotationRad * 0.5);
     const cp = Math.cos(yRotationRad * 0.5);

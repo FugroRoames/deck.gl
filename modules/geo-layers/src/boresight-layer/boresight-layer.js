@@ -31,13 +31,7 @@ const defaultProps = {
   onTilesetLoad: tileset3d => {},
   onTileLoad: tileHeader => {},
   onTileUnload: tileHeader => {},
-  onTileError: (tile, message, url) => {},
-  xRotation: null,
-  yRotation: null,
-  zRotation: null,
-  xTranslation: null,
-  yTranslation: null,
-  zTranslation: null
+  onTileError: (tile, message, url) => {}
 };
 
 const TEXTURE_OPTIONS = {
@@ -128,6 +122,9 @@ export default class BoresightLayer extends CompositeLayer {
     // call Roames3DLayer for each dataset
     for (const dataUrl in data) {
       const transforms = data[dataUrl];
+      const rot = transforms.rotation;
+      const tran = transforms.translation;
+      // console.log(rot);
       let layer = layerMap[dataUrl] && layerMap[dataUrl].layer;
       if (!layer) {
         layer = new Roames3DLayer({
@@ -139,14 +136,18 @@ export default class BoresightLayer extends CompositeLayer {
           boundingBox,
           gpsPoints,
           points,
-          onTilesetLoad: this.props.onTilesetLoad
+          onTilesetLoad: this.props.onTilesetLoad,
+          xRotation: rot.xRotation,
+          yRotation: rot.yRotation,
+          zRotation: rot.zRotation,
+          xTranslation: tran.xTranslation,
+          yTranslation: tran.yTranslation,
+          zTranslation: tran.zTranslation
         });
         layerMap[dataUrl] = {layer, dataURL: dataUrl, rotated: false, translated: false};
       } else if (layerMap[dataUrl].rotated) {
-        const rot = transforms.rotation;
         layer.updateRotation(rot.xRotation, rot.yRotation, rot.zRotation);
       } else if (layerMap[dataUrl].translated) {
-        const tran = transforms.translation;
         layer.updateTranslation(tran.xTranslation, tran.yTranslation, tran.zTranslation);
       } else if (this.state.subLayerToggled) {
         layer.updateLayerToggle(boundingBox, points, gpsPoints);

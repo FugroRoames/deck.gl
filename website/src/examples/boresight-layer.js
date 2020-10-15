@@ -117,12 +117,6 @@ class BoresightDemo extends Component {
           }
         }}
         colorDomain={[colorMin, colorMax]}
-        x={rotX}
-        y={rotY}
-        z={rotZ}
-        xT={tranX}
-        yT={tranY}
-        zT={tranZ}
         boundingBox={boundingBox}
         points={points}
         gpsPoints={gpsPoints}
