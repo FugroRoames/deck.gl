@@ -17,20 +17,25 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-/* eslint-disable max-len */
 
-export {default as ScreenGridLayer} from './screen-grid-layer/screen-grid-layer';
-export {default as CPUGridLayer} from './cpu-grid-layer/cpu-grid-layer';
-export {default as HexagonLayer} from './hexagon-layer/hexagon-layer';
-export {default as ContourLayer} from './contour-layer/contour-layer';
-export {default as GridLayer} from './grid-layer/grid-layer';
-export {default as GPUGridLayer} from './gpu-grid-layer/gpu-grid-layer';
-export {AGGREGATION_OPERATION} from './utils/aggregation-operation-utils';
+export default `\
+#define SHADER_NAME roames-point-cloud-layer-fragment-shader
 
-// experimental export
-export {default as HeatmapLayer} from './heatmap-layer/heatmap-layer';
-export {default as _GPUGridAggregator} from './utils/gpu-grid-aggregation/gpu-grid-aggregator';
-export {default as _CPUAggregator} from './utils/cpu-aggregator';
-export {default as _AggregationLayer} from './aggregation-layer';
-export {default as _BinSorter} from './utils/bin-sorter';
-export {default as RoamesHeightLayer} from './roames-height-layer/roames-height-layer';
+precision highp float;
+
+varying vec4 vColor;
+varying vec2 unitPosition;
+
+void main(void) {
+  geometry.uv = unitPosition;
+
+  float distToCenter = length(unitPosition);
+
+  if (distToCenter > 1.0) {
+    discard;
+  }
+
+  gl_FragColor = vColor;
+  DECKGL_FILTER_COLOR(gl_FragColor, geometry);
+}
+`;

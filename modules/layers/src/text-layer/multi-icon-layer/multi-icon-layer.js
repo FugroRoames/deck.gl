@@ -88,7 +88,7 @@ export default class MultiIconLayer extends IconLayer {
       uniforms: Object.assign({}, uniforms, {
         // Refer the following doc about gamma and buffer
         // https://blog.mapbox.com/drawing-text-with-signed-distance-fields-in-mapbox-gl-b0933af6f817
-        buffer: DEFAULT_BUFFER,
+        ubuffer: DEFAULT_BUFFER,
         gamma: DEFAULT_GAMMA,
         sdf: Boolean(sdf),
         backgroundColor: backgroundColor || [0, 0, 0],

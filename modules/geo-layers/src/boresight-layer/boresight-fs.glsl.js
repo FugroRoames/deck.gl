@@ -17,20 +17,35 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-/* eslint-disable max-len */
 
-export {default as ScreenGridLayer} from './screen-grid-layer/screen-grid-layer';
-export {default as CPUGridLayer} from './cpu-grid-layer/cpu-grid-layer';
-export {default as HexagonLayer} from './hexagon-layer/hexagon-layer';
-export {default as ContourLayer} from './contour-layer/contour-layer';
-export {default as GridLayer} from './grid-layer/grid-layer';
-export {default as GPUGridLayer} from './gpu-grid-layer/gpu-grid-layer';
-export {AGGREGATION_OPERATION} from './utils/aggregation-operation-utils';
+export default `\
+#define SHADER_NAME boresight-layer-fragment-shader
 
-// experimental export
-export {default as HeatmapLayer} from './heatmap-layer/heatmap-layer';
-export {default as _GPUGridAggregator} from './utils/gpu-grid-aggregation/gpu-grid-aggregator';
-export {default as _CPUAggregator} from './utils/cpu-aggregator';
-export {default as _AggregationLayer} from './aggregation-layer';
-export {default as _BinSorter} from './utils/bin-sorter';
-export {default as RoamesHeightLayer} from './roames-height-layer/roames-height-layer';
+precision highp float;
+
+uniform float opacity;
+uniform sampler2D textureone;
+uniform sampler2D texturetwo;
+varying vec2 vTexCoords;
+uniform sampler2D colorTexture;
+uniform vec2 colorDomain;
+
+vec4 getLinearColor(float value) {
+  float factor = clamp((value - colorDomain[0])/(colorDomain[1] - colorDomain[0]), 0., 1.);
+  vec4 color = texture2D(colorTexture, vec2(factor, 0.5));
+  return color;
+}
+
+void main(void) {
+  float weightone = texture2D(textureone, vTexCoords).r;
+  float weighttwo = texture2D(texturetwo, vTexCoords).r;
+  // discard pixels with 0 weight.
+  // note: height can technically go to negative if rotated in a large angle
+  if (weightone <= 0. || weighttwo <= 0.) {
+    discard;
+  } 
+
+  vec4 linearColor = getLinearColor(weighttwo - weightone);
+  gl_FragColor = linearColor;
+}
+`;
