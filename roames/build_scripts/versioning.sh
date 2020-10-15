@@ -16,7 +16,14 @@ set -e
 pwd
 ls modules/main
 
-FILEVERSION="dist.${VERSION}.min.js"
+# Get build number from Environment (usually jenkins)
+if [[ -z "${BUILD_NUMBER}" ]]; then
+    echo "BUILD_NUMBER not found - set to dev";
+    BUILD_NUMBER="dev";
+if
+echo "Build Number is ${BUILD_NUMBER}"
+
+FILEVERSION="dist.${VERSION}+${BUILD_NUMBER}.min.js"
 echo "Version filename ..."
 echo ${FILEVERSION}
 
