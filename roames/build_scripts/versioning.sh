@@ -23,7 +23,7 @@ if [[ -z "${BUILD_NUMBER}" ]]; then
 fi
 echo "Build Number is ${BUILD_NUMBER}"
 
-FILEVERSION="dist.${VERSION}+${BUILD_NUMBER}.min.js"
+FILEVERSION="dist.${VERSION}-${BUILD_NUMBER}.min.js"
 echo "Version filename ..."
 echo ${FILEVERSION}
 
