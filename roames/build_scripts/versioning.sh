@@ -2,7 +2,7 @@
 
 set +e
 echo "Versioning the build file:"
-git tag
+git tag -l FRD*
 git branch
 # git version relative to tag, or raw ref as last resort
 VERSION=${VERSION:-$(git describe --long --abbrev=10 --match "FRD-*" 2>/dev/null)}
@@ -20,7 +20,7 @@ ls modules/main
 if [[ -z "${BUILD_NUMBER}" ]]; then
     echo "BUILD_NUMBER not found - set to dev";
     BUILD_NUMBER="dev";
-if
+fi
 echo "Build Number is ${BUILD_NUMBER}"
 
 FILEVERSION="dist.${VERSION}+${BUILD_NUMBER}.min.js"
@@ -28,5 +28,3 @@ echo "Version filename ..."
 echo ${FILEVERSION}
 
 mv modules/main/dist.min.js modules/main/${FILEVERSION}
-
-
