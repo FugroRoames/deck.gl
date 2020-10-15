@@ -27,3 +27,9 @@ Copy of code in the jenkins job that builds the application
 Copy of the code in the jenkins deploy job.
 
 
+### Git Tags
+The tagging semantics are FRD-x.y.z
+FRD = Fugro Roames Deckgl
+x.y.z = major.minor.revision
+
+
