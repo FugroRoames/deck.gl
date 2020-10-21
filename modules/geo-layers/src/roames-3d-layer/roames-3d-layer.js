@@ -220,6 +220,18 @@ export default class Roames3DLayer extends CompositeLayer {
     }
   }
 
+  finalizeState() {
+    super.finalizeState();
+    const {totalWeightsTexture, totalWeightsTransform} = this.state;
+    if (totalWeightsTexture) {
+      totalWeightsTexture.delete();
+    }
+
+    if (totalWeightsTransform) {
+      totalWeightsTransform.delete();
+    }
+  }
+
   _getChangeFlags(opts) {
     const changeFlags = {};
     changeFlags.viewportChanged = opts.changeFlags.viewportChanged;

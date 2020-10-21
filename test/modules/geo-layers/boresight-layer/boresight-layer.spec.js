@@ -17,32 +17,24 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
+import test from 'tape-catch';
 
-// Inspired by screen-grid-layer vertex shader in deck.gl
+import {testLayer, generateLayerTests} from '@deck.gl/test-utils';
+import {BoresightLayer} from '@deck.gl/geo-layers';
 
-export default `\
-#define SHADER_NAME triangle-layer-vertex-shader
+test('BoresightLayer', t => {
+  const testCases = generateLayerTests({
+    Layer: BoresightLayer,
+    assert: t.ok,
+    onBeforeUpdate: ({testCase}) => t.comment(testCase.title),
+    runDefaultAsserts: false
+  });
 
-// uniform sampler2D maxTexture;
-uniform float intensity;
-uniform vec2 colorDomain;
-uniform float threshold;
+  testLayer({
+    Layer: BoresightLayer,
+    testCases,
+    onError: t.notOk
+  });
 
-attribute vec3 positions;
-attribute vec2 texCoords;
-
-varying vec2 vTexCoords;
-varying float minDiff;
-varying float maxDiff;
-
-void main(void) {
-  gl_Position = project_position_to_clipspace(positions, vec3(0.0), vec3(0.0));
-  vTexCoords = texCoords;
-  // float maxValue = 500.; //texture2D(maxTexture, vec2(0.5)).r;
-  // float minValue = 400.; // maxValue * threshold;
-  float maxValue = 50.;
-  float minValue = -10.;
-  maxDiff = maxValue;
-  minDiff = minValue;
-}
-`;
+  t.end();
+});

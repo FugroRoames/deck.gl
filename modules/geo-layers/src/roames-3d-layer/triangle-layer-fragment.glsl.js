@@ -38,8 +38,9 @@ vec4 getLinearColor(float value) {
 
 void main(void) {
   float weight = texture2D(texture, vTexCoords).r;
+  float weightvalid = texture2D(texture, vTexCoords).g;
   // discard pixels with 0 weight.
-  if (weight <= 0.) {
+  if (weightvalid != 1.) {
      discard;
   }
 

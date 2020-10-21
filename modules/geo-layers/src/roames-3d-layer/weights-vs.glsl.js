@@ -35,7 +35,7 @@ void main()
   vec4 position_world = project_uModelMatrix * vec4(p, 1.0) + vec4(project_uCoordinateOrigin, 1.);
 
   float height = position_world.z;
-  weightsTexture = vec4(height, 0., 0., 1.);
+  weightsTexture = vec4(height, 1., 0., 1.);
 
   float radiusTexels  = project_pixel_size(radiusPixels) * textureWidth / (commonBounds.z - commonBounds.x);
   gl_PointSize = radiusTexels * 2.;
@@ -47,6 +47,6 @@ void main()
   // map xy from commonBounds to [-1, 1]
   gl_Position.xy = (commonPosition.xy - commonBounds.xy) / (commonBounds.zw - commonBounds.xy) ;
   gl_Position.xy = (gl_Position.xy * 2.) - (1.);
-  gl_Position.z = log(height)/10.;
+  gl_Position.z = 1.;//log(height)/10.;
 }
 `;

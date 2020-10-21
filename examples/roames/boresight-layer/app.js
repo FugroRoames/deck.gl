@@ -6,8 +6,17 @@ import DeckGL from '@deck.gl/react';
 import {BoresightLayer} from '@deck.gl/geo-layers';
 import {Tiles3DLoader} from '@loaders.gl/3d-tiles';
 
-const FLIGHT_ONE_URL = `https://d3hwnz5sahda3g.cloudfront.net/flightline2/tileset.json`;
-const FLIGHT_TWO_URL = `https://d3hwnz5sahda3g.cloudfront.net/flightline1/tileset.json`;
+// const FLIGHT_ONE_URL = `https://d3hwnz5sahda3g.cloudfront.net/flightline2/tileset.json`;
+// const FLIGHT_TWO_URL = `https://d3hwnz5sahda3g.cloudfront.net/flightline1/tileset.json`;
+const FLIGHT_ONE_URL =
+  'https://d2p2h9bgfn7gmq.cloudfront.net/20072099-20201020150357/final/0010000_1/tileset.json';
+const FLIGHT_TWO_URL =
+  'https://d2p2h9bgfn7gmq.cloudfront.net/20072099-20201020150357/final/0020000_1/tileset.json';
+// const FLIGHT_THREE_URL =
+// 'https://d2p2h9bgfn7gmq.cloudfront.net/20072099-20201020150357/final/0030000_1/tileset.json';
+// const FLIGHT_FOUR_URL =
+// 'https://d2p2h9bgfn7gmq.cloudfront.net/20072099-20201020150357/final/0040000_1/tileset.json';
+
 const INITIAL_VIEW_STATE = {
   longitude: 144.94345786971536,
   latitude: -37.812765742471754,

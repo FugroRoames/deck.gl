@@ -49,3 +49,4 @@ import './h3-layers.spec';
 import './tile-3d-layer';
 import './terrain-layer.spec';
 import './mvt-layer.spec';
+import './boresight-layer';
