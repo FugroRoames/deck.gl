@@ -46,12 +46,12 @@ const EXTENSION_EXAMPLES = {
 
 module.exports = [].concat(
   makeExampleEntries(LAYER_EXAMPLES, 'Layers'),
-  makeExampleEntries(INTEGRATION_EXAMPLES, 'Integrations'),
-  makeExampleEntries(EXTENSION_EXAMPLES, 'Extensions'),
-  {
-    title: 'Playground',
-    category: 'Declarative',
-    path: 'playground',
-    image: 'images/examples/playground.jpg'
-  }
+  // makeExampleEntries(INTEGRATION_EXAMPLES, 'Integrations'),
+  // makeExampleEntries(EXTENSION_EXAMPLES, 'Extensions'),
+  // {
+  //   title: 'Playground',
+  //   category: 'Declarative',
+  //   path: 'playground',
+  //   image: 'images/examples/playground.jpg'
+  // }
 );
