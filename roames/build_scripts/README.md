@@ -18,7 +18,7 @@ Builds the bundle - pretty simple - yarn build!!!
 #### versioning.sh
 Works out a suitable version string to use for the build artifact filename. This is based on the git tag / git commit id / Jenkins build number:
 
-``` dist.FRD-1.0.2-11-g4ee156415d+3.min.js ```
+``` dist.FReD-1.0.2-11-g4ee156415d+3.min.js ```
 
 #### jenkins.sh
 Copy of code in the jenkins job that builds the application
@@ -28,8 +28,8 @@ Copy of the code in the jenkins deploy job.
 
 
 ### Git Tags
-The tagging semantics are FRD-x.y.z
-FRD = Fugro Roames Deckgl
+The tagging semantics are FReD-x.y.z
+FReD = Fugro Roames enhanced Deckgl
 x.y.z = major.minor.revision
 
 

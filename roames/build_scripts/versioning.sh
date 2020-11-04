@@ -2,11 +2,11 @@
 
 set +e
 echo "Versioning the build file:"
-git tag -l FRD*
+git tag -l FReD*
 git branch
 # git version relative to tag, or raw ref as last resort
-VERSION=${VERSION:-$(git describe --long --abbrev=10 --match "FRD-*" 2>/dev/null)}
-echo "FRD version is ${VERSION}"
+VERSION=${VERSION:-$(git describe --long --abbrev=10 --match "FReD-*" 2>/dev/null)}
+echo "FReD version is ${VERSION}"
 VERSION=${VERSION:-$(git describe --long --abbrev=10                 2>/dev/null)}
 echo "Lastest tag version is ${VERSION}"
 VERSION=${VERSION:-$(git describe --long --abbrev=10 --always)}
