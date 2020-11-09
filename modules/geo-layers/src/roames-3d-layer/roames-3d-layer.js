@@ -28,7 +28,7 @@ import {
   packVertices
 } from '../../../core/src/utils/bound-utils';
 
-import {URL} from 'url';
+import * as nodeUrl from 'url';
 
 const defaultProps = {
   getPointColor: [0, 0, 0],
@@ -304,8 +304,11 @@ export default class Roames3DLayer extends CompositeLayer {
     });
 
     // Dirty hack to push the query parameter to the tileset3d object.
-    const url = new URL(tilesetUrl);
-    tileset3d._queryParamsString = `&${url.searchParams.toString()}`;
+    const url = nodeUrl.parse(tilesetUrl);
+    if (url.query)
+    {
+      tileset3d._queryParamsString = `&${url.query}`;
+    }
 
     this.setState({
       tileset3d,
