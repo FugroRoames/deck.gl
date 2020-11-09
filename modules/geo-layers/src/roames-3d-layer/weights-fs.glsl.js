@@ -1,7 +1,7 @@
 export default `\
 #define SHADER_NAME weight-fragment-shader
 
-varying vec4 weightsTexture;
+varying float weightsTexture;
 // varying vec4 outTexture;
 
 // Epanechnikov function, keeping for reference
@@ -17,7 +17,8 @@ void main()
   if (dist > 0.5) {
     discard;
   }
-  gl_FragColor.rgb = weightsTexture.rgb; //* gaussianKDE(2. * dist);
+
+  gl_FragColor.rgb = vec3(weightsTexture, 0., 0.);
   // gl_FragColor.rgb = vec3(1., 0., 0.);
   gl_FragColor.a = 1.0;
   DECKGL_FILTER_COLOR(gl_FragColor, geometry);

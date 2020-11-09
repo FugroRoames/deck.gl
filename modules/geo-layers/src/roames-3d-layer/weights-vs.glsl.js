@@ -5,7 +5,7 @@ attribute vec3 positions;
 attribute vec3 gpsPositions;
 attribute vec4 gpsDirections;
 
-varying vec4 weightsTexture;
+varying float weightsTexture;
 uniform float radiusPixels;
 uniform float textureWidth;
 uniform vec4 commonBounds;
@@ -35,7 +35,7 @@ void main()
   vec4 position_world = project_uModelMatrix * vec4(p, 1.0) + vec4(project_uCoordinateOrigin, 1.);
 
   float height = position_world.z;
-  weightsTexture = vec4(height, 1., 0., 1.);
+  weightsTexture = height;
 
   float radiusTexels  = project_pixel_size(radiusPixels) * textureWidth / (commonBounds.z - commonBounds.x);
   gl_PointSize = radiusTexels * 2.;

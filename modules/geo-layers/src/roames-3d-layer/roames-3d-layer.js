@@ -28,6 +28,8 @@ import {
   packVertices
 } from '../../../core/src/utils/bound-utils';
 
+import {URL} from 'url';
+
 const defaultProps = {
   getPointColor: [0, 0, 0],
   pointSize: 2.0,
@@ -59,7 +61,7 @@ const TEXTURE_OPTIONS = {
     [GL.TEXTURE_WRAP_S]: GL.CLAMP_TO_EDGE,
     [GL.TEXTURE_WRAP_T]: GL.CLAMP_TO_EDGE
   },
-  dataFormat: GL.RGBA
+  dataFormat: GL.RED
 };
 
 const SIZE_2K = 2048;
@@ -303,7 +305,7 @@ export default class Roames3DLayer extends CompositeLayer {
 
     // Dirty hack to push the query parameter to the tileset3d object.
     const url = new URL(tilesetUrl);
-    tileset3d._queryParamsString = '&' + url.searchParams.toString();
+    tileset3d._queryParamsString = `&${url.searchParams.toString()}`;
 
     this.setState({
       tileset3d,
@@ -380,7 +382,7 @@ export default class Roames3DLayer extends CompositeLayer {
       totalWeightsTexture: new Texture2D(gl, {
         width: textureSize,
         height: textureSize,
-        format: GL.RGBA32F,
+        format: GL.R32F,
         type: GL.FLOAT,
         ...TEXTURE_OPTIONS
       }),
