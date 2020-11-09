@@ -301,6 +301,10 @@ export default class Roames3DLayer extends CompositeLayer {
       ...options
     });
 
+    // Dirty hack to push the query parameter to the tileset3d object.
+    const url = new URL(tilesetUrl);
+    tileset3d._queryParamsString = '&' + url.searchParams.toString();
+
     this.setState({
       tileset3d,
       layerMap: {}
