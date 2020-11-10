@@ -39,11 +39,9 @@ vec4 getLinearColor(float value) {
 void main(void) {
   float weightone = texture2D(textureone, vTexCoords).r;
   float weighttwo = texture2D(texturetwo, vTexCoords).r;
-  float weightonevalid = texture2D(textureone, vTexCoords).g;
-  float weighttwovalid = texture2D(texturetwo, vTexCoords).g;
   // discard pixels with 0 weight.
   // note: height can technically go to negative if rotated in a large angle
-  if (weightonevalid != 1. || weighttwovalid != 1.) {
+  if (weightone <= 0. || weighttwo <= 0.) {
     discard;
   } 
 
