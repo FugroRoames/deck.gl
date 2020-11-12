@@ -46,8 +46,8 @@ const defaultProps = {
 const TEXTURE_OPTIONS = {
   mipmaps: false,
   parameters: {
-    [GL.TEXTURE_MAG_FILTER]: GL.LINEAR,
-    [GL.TEXTURE_MIN_FILTER]: GL.LINEAR,
+    [GL.TEXTURE_MAG_FILTER]: GL.NEAREST,
+    [GL.TEXTURE_MIN_FILTER]: GL.NEAREST,
     [GL.TEXTURE_WRAP_S]: GL.CLAMP_TO_EDGE,
     [GL.TEXTURE_WRAP_T]: GL.CLAMP_TO_EDGE
   },
