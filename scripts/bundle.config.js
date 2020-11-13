@@ -91,7 +91,7 @@ const config = {
 
   node: false,
 
-  devtool: false
+  devtool: "source-map"
 };
 
 module.exports = (env = {}) => {
