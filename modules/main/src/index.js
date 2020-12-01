@@ -48,6 +48,8 @@ export {
   OrbitController,
   FirstPersonController,
   OrthographicController,
+  HorizontalOrthoController,
+  MapBoundController,
   _GlobeController,
   // For custom layers
   AttributeManager,

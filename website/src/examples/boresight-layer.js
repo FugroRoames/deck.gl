@@ -9,7 +9,7 @@ import makeExample from '../components/example';
 class BoresightDemo extends Component {
   static title = 'DZ - Flight Path 1 vs Flight Path 2';
   static parameters = {
-    rotX: {displayName: 'Rotation X', value: 0, step: 0.001, type: 'range', min: -180, max: 180},
+    rotX: {displayName: 'Rotation X', value: 0, step: 0.001, type: 'range', min: -10, max: 10},
     rotY: {displayName: 'Rotation Y', value: 0, step: 0.001, type: 'range', min: -10, max: 10},
     rotZ: {displayName: 'Rotation Z', value: 0, step: 0.001, type: 'range', min: -10, max: 10},
     tranX: {
@@ -40,16 +40,20 @@ class BoresightDemo extends Component {
     colorMax: {displayName: 'Color Max', value: 10},
     data1: {
       displayName: 'Flight line 1',
-      value: 'https://d3hwnz5sahda3g.cloudfront.net/flightline2/tileset.json'
+      value: 'https://d3hwnz5sahda3g.cloudfront.net/flightline1/tileset.json'
+      // value:
+      // 'https://d2p2h9bgfn7gmq.cloudfront.net/users/daikiichiyama/0010000_1/tileset.json?Policy=eyJTdGF0ZW1lbnQiOiBbeyJSZXNvdXJjZSI6Imh0dHBzOi8vZDJwMmg5YmdmbjdnbXEuY2xvdWRmcm9udC5uZXQvdXNlcnMvZGFpa2lpY2hpeWFtYS8qIiwiQ29uZGl0aW9uIjp7IkRhdGVMZXNzVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNjY3OTYyOTI4fX19XX0_&Signature=BmAww66GtiL0hPIB-l1o8gES-Ljey2BlFFojqCnkxlKauLZE8GYYZMWQopqgTZayTNgc-3omTd1KD5EitEUxtORVwLNyY3OBkoub~L~fwNn-lF9qIyA8j8pAQKfmLPJ2GuxU~Opaay~rNxzDwk1W4BAOUeU94w-nw4hWp7zE5CALH94fL0K8npwopsyy6UqEB42ox-0vSfG3k6oV3d7Z6RL4RV8ksdEHJ05py8MYLjT5y3wM1WXRbNmABdw9wWEodJlTg0gxQysZCcp76riSsZQ~icsidV3nXhM6-qTPezY4mFO6QG6z01fkQgIxywEhzBa~tDjl6U62L14egN8f4A__&Key-Pair-Id=APKAJNAMH5VW75CUXS4Q'
     },
     data2: {
       displayName: 'Flight line 2',
-      value: 'https://d3hwnz5sahda3g.cloudfront.net/flightline1/tileset.json'
+      value: 'https://d3hwnz5sahda3g.cloudfront.net/flightline2/tileset.json'
+      // value:
+      // 'https://d2p2h9bgfn7gmq.cloudfront.net/users/daikiichiyama/0030000_1/tileset.json?Policy=eyJTdGF0ZW1lbnQiOiBbeyJSZXNvdXJjZSI6Imh0dHBzOi8vZDJwMmg5YmdmbjdnbXEuY2xvdWRmcm9udC5uZXQvdXNlcnMvZGFpa2lpY2hpeWFtYS8qIiwiQ29uZGl0aW9uIjp7IkRhdGVMZXNzVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNjY3OTYyOTI4fX19XX0_&Signature=BmAww66GtiL0hPIB-l1o8gES-Ljey2BlFFojqCnkxlKauLZE8GYYZMWQopqgTZayTNgc-3omTd1KD5EitEUxtORVwLNyY3OBkoub~L~fwNn-lF9qIyA8j8pAQKfmLPJ2GuxU~Opaay~rNxzDwk1W4BAOUeU94w-nw4hWp7zE5CALH94fL0K8npwopsyy6UqEB42ox-0vSfG3k6oV3d7Z6RL4RV8ksdEHJ05py8MYLjT5y3wM1WXRbNmABdw9wWEodJlTg0gxQysZCcp76riSsZQ~icsidV3nXhM6-qTPezY4mFO6QG6z01fkQgIxywEhzBa~tDjl6U62L14egN8f4A__&Key-Pair-Id=APKAJNAMH5VW75CUXS4Q'
     },
     boundingBox: {displayName: 'Bounding Box', value: false, type: 'checkbox'},
     points: {displayName: 'Points', value: false, type: 'checkbox'},
-    gpsPoints: {displayName: 'GPS Points', value: false, type: 'checkbox'}
-
+    gpsPoints: {displayName: 'GPS Points', value: false, type: 'checkbox'},
+    drawBoundingBox: {displayName: 'Draw Bounding Box', value: false, type: 'checkbox'}
     // https://roames-hpc-home.s3-ap-southeast-2.amazonaws.com/users/peteroloughlin/gpspos2/tileset.json
   };
 
@@ -72,7 +76,7 @@ class BoresightDemo extends Component {
   }
 
   render() {
-    const {params, data} = this.props;
+    const {params} = this.props;
     const rotX = params.rotX.value;
     const rotY = params.rotY.value;
     const rotZ = params.rotZ.value;
@@ -86,6 +90,7 @@ class BoresightDemo extends Component {
     const boundingBox = params.boundingBox.value;
     const points = params.points.value;
     const gpsPoints = params.gpsPoints.value;
+    const drawBoundingBox = params.drawBoundingBox.value;
 
     return (
       <App
@@ -122,6 +127,7 @@ class BoresightDemo extends Component {
         gpsPoints={gpsPoints}
         loader={Tiles3DLoader}
         loadOptions={{}}
+        drawBoundingBox={drawBoundingBox}
         // loader={CesiumIonLoader}
         // loadOptions={{'cesium-ion': {accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJlYWMxMzcyYy0zZjJkLTQwODctODNlNi01MDRkZmMzMjIxOWIiLCJpZCI6OTYyMCwic2NvcGVzIjpbImFzbCIsImFzciIsImdjIl0sImlhdCI6MTU2Mjg2NjI3M30.1FNiClUyk00YH_nWfSGpiQAjR5V2OvREDq1PJ5QMjWQ'}}}
       />

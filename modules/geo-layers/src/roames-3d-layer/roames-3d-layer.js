@@ -3,8 +3,7 @@ import {Buffer, Transform, Texture2D, getParameters, isWebGL2} from '@luma.gl/co
 
 import {addMetersToLngLat} from '@math.gl/web-mercator';
 import {Ellipsoid} from '@math.gl/geospatial';
-
-import {COORDINATE_SYSTEM, CompositeLayer} from '@deck.gl/core';
+import {COORDINATE_SYSTEM, CompositeLayer, WebMercatorViewport} from '@deck.gl/core';
 import {PolygonLayer, PointCloudLayer, RoamesPointCloudLayer} from '@deck.gl/layers';
 import {RoamesHeightLayer} from '@deck.gl/aggregation-layers';
 
@@ -50,7 +49,8 @@ const defaultProps = {
   height: true,
   boundingBox: false,
   points: false,
-  gpsPoints: false
+  gpsPoints: false,
+  bounds: null
 };
 
 const TEXTURE_OPTIONS = {
@@ -94,7 +94,8 @@ export default class Roames3DLayer extends CompositeLayer {
       height,
       boundingBox,
       points,
-      gpsPoints
+      gpsPoints,
+      bounds
     } = this.props;
 
     this.setState({
@@ -107,7 +108,8 @@ export default class Roames3DLayer extends CompositeLayer {
       height,
       boundingBox,
       points,
-      gpsPoints
+      gpsPoints,
+      bounds
     });
   }
 
@@ -213,6 +215,12 @@ export default class Roames3DLayer extends CompositeLayer {
   updateTranslation(xTranslation, yTranslation, zTranslation) {
     if (this.state) {
       this.setState({xTranslation, yTranslation, zTranslation, translationChanged: true});
+    }
+  }
+
+  updateBounds(bounds) {
+    if (this.state) {
+      this.setState({bounds});
     }
   }
 
@@ -325,7 +333,6 @@ export default class Roames3DLayer extends CompositeLayer {
       batchTable.featuresLength = pointCount;
       this._parseBatchArray(tileHeader.content, batchTable);
     }
-
     this.props.onTileLoad(tileHeader);
 
     this._updateTileset(this.state.tileset3d);
@@ -365,7 +372,7 @@ export default class Roames3DLayer extends CompositeLayer {
 
   _updateTileset(tileset3d) {
     const {timeline, viewport} = this.context;
-    if (!timeline || !viewport || !tileset3d) {
+    if (!timeline || !viewport || !tileset3d || !(viewport instanceof WebMercatorViewport)) {
       return;
     }
     tileset3d.update(viewport);
@@ -504,18 +511,24 @@ export default class Roames3DLayer extends CompositeLayer {
     const {
       attributes,
       pointCount,
-      constantRGBA,
+      // constantRGBA,
       cartographicOrigin,
       modelMatrix
     } = tileHeader.content;
-    const {positions, gpsPositions, gpsDirections, normals, colors} = attributes;
+    const {
+      positions,
+      gpsPositions,
+      gpsDirections,
+      normals
+      // colors
+    } = attributes;
 
     if (!positions || !gpsPositions || !gpsDirections) {
       return null;
     }
 
     const {pointSize, getPointColor} = this.props;
-
+    const {bounds} = this.state;
     const SubLayerClass = this.getSubLayerClass('pointcloud', RoamesPointCloudLayer);
     return new SubLayerClass(
       {
@@ -534,15 +547,15 @@ export default class Roames3DLayer extends CompositeLayer {
             POSITION: positions,
             GPS_POSITION: gpsPositions,
             GPS_DIRECTION: gpsDirections,
-            NORMAL: normals,
-            COLOR_0: colors
+            NORMAL: normals
+            // COLOR_0: colors
           }
         },
         coordinateSystem: COORDINATE_SYSTEM.METER_OFFSETS,
         coordinateOrigin: cartographicOrigin,
         modelMatrix,
-
-        getColor: constantRGBA || getPointColor
+        bounds,
+        getColor: getPointColor // constantRGBA ||
       }
     );
   }
@@ -688,6 +701,9 @@ export default class Roames3DLayer extends CompositeLayer {
         );
       }
 
+      if (this.state.bounds && type === 'points') {
+        layer.updateBounds(this.state.bounds);
+      }
       // update layer visibility
       if (layer && layer.props && !layer.props.visible) {
         // Still has GPU resource but visibility is turned off so turn it back on so we can render it.

@@ -27,6 +27,7 @@ import fs from './roames-point-cloud-layer-fragment.glsl';
 
 const DEFAULT_COLOR = [0, 0, 0, 255];
 const DEFAULT_NORMAL = [0, 0, 1];
+import {projectLongLatToLayerPosition} from '../../../core/src/utils/bound-utils';
 
 const defaultProps = {
   sizeUnits: 'pixels',
@@ -45,7 +46,7 @@ const defaultProps = {
   getColor: {type: 'accessor', value: DEFAULT_COLOR},
 
   material: true,
-
+  bounds: null,
   // Depreated
   radiusPixels: {deprecatedFor: 'pointSize'}
 };
@@ -120,9 +121,25 @@ export default class RoamesPointCloudLayer extends Layer {
         defaultValue: DEFAULT_COLOR
       }
     });
-    this.setState({xRotationRad: 0, yRotationRad: 0, zRotationRad: 0});
-    this.setState({xTranslation: 0, yTranslation: 0, zTranslation: 0});
 
+    const {
+      xRotationRad,
+      yRotationRad,
+      zRotationRad,
+      xTranslation,
+      yTranslation,
+      zTranslation,
+      bounds
+    } = this.props;
+    this.setState({
+      xRotationRad,
+      yRotationRad,
+      zRotationRad,
+      xTranslation,
+      yTranslation,
+      zTranslation,
+      bounds
+    });
     /* eslint-enable max-len */
   }
 
@@ -150,9 +167,45 @@ export default class RoamesPointCloudLayer extends Layer {
       zRotationRad,
       xTranslation,
       yTranslation,
-      zTranslation
+      zTranslation,
+      bounds
     } = this.state;
     const sizeMultiplier = sizeUnits === 'meters' ? 1 / viewport.metersPerPixel : 1;
+
+    let edge1 = [0, 0, 0, 0];
+    let edge2 = [0, 0, 0, 0];
+    let calcBound = false;
+    if (bounds) {
+      const {coordinateSystem, coordinateOrigin} = this.props;
+      const vert1 = projectLongLatToLayerPosition(
+        bounds[0],
+        viewport,
+        coordinateSystem,
+        coordinateOrigin
+      );
+      const vert2 = projectLongLatToLayerPosition(
+        bounds[1],
+        viewport,
+        coordinateSystem,
+        coordinateOrigin
+      );
+      const vert3 = projectLongLatToLayerPosition(
+        bounds[2],
+        viewport,
+        coordinateSystem,
+        coordinateOrigin
+      );
+      const vert4 = projectLongLatToLayerPosition(
+        bounds[3],
+        viewport,
+        coordinateSystem,
+        coordinateOrigin
+      );
+
+      edge1 = [...vert1.slice(0, 2), ...vert2.slice(0, 2)];
+      edge2 = [...vert3.slice(0, 2), ...vert4.slice(0, 2)];
+      calcBound = true;
+    }
 
     this.state.model
       .setUniforms(
@@ -163,7 +216,10 @@ export default class RoamesPointCloudLayer extends Layer {
           zRotationRad,
           xTranslation,
           yTranslation,
-          zTranslation
+          zTranslation,
+          calcBound,
+          edge1,
+          edge2
         })
       )
       .draw();
@@ -184,6 +240,13 @@ export default class RoamesPointCloudLayer extends Layer {
       return;
     }
     this.setState({xTranslation, yTranslation, zTranslation});
+  }
+
+  updateBounds(bounds) {
+    if (!this.state) {
+      return;
+    }
+    this.setState({bounds});
   }
 
   _getModel(gl) {

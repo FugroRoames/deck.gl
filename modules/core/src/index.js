@@ -71,6 +71,8 @@ export {default as _GlobeController} from './controllers/globe-controller';
 export {default as FirstPersonController} from './controllers/first-person-controller';
 export {default as OrbitController} from './controllers/orbit-controller';
 export {default as OrthographicController} from './controllers/orthographic-controller';
+export {default as HorizontalOrthoController} from './controllers/horizontal-ortho-controller';
+export {default as MapBoundController} from './controllers/map-bound-controller';
 
 // Extensions interface
 export {default as Effect} from './lib/effect';

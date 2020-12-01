@@ -9,6 +9,7 @@ import {Tiles3DLoader} from '@loaders.gl/3d-tiles';
 
 import TriangleLayer from './triangle-layer';
 import Roames3DLayer from '../roames-3d-layer/roames-3d-layer';
+import {PolygonLayer} from '@deck.gl/layers';
 
 import {colorRangeToFlatArray} from '../../../aggregation-layers/src/utils/color-utils';
 import {
@@ -16,7 +17,6 @@ import {
   getTextureCoordinates,
   packVertices
 } from '../../../core/src/utils/bound-utils';
-
 const defaultProps = {
   getPointColor: [0, 0, 0],
   colorDomain: {type: 'array', value: [-10, 10], optional: true},
@@ -37,6 +37,8 @@ const defaultProps = {
   boundingBox: false,
   points: false,
   gpsPoints: false,
+  getBoundBox: {start: null, end: null, widthPoint: null, interEnd: null, interWidth: null},
+  bounds: null,
   onTilesetLoad: tileset3d => {},
   onTileLoad: tileHeader => {},
   onTileUnload: tileHeader => {},
@@ -65,7 +67,12 @@ export default class BoresightLayer extends CompositeLayer {
     }
     const textureSize = Math.min(SIZE_2K, getParameters(gl, gl.MAX_TEXTURE_SIZE));
 
-    this.setState({layerMap: {}, textureSize});
+    this.setState({
+      layerMap: {},
+      textureSize,
+      boundBox: this.props.getBoundBox,
+      bounds: this.props.bounds
+    });
     this._createBuffers();
   }
 
@@ -121,9 +128,13 @@ export default class BoresightLayer extends CompositeLayer {
     this._updateTextureRenderingBounds();
   }
 
+  getRandomInt(max) {
+    return Math.floor(Math.random() * Math.floor(max));
+  }
+
   /* eslint-disable complexity, max-statements */
   renderLayers() {
-    const {layerMap} = this.state;
+    const {layerMap, bounds} = this.state;
     const {data, boundingBox, points, gpsPoints} = this.props;
 
     const subLayers = [];
@@ -133,7 +144,6 @@ export default class BoresightLayer extends CompositeLayer {
       const transforms = data[dataUrl];
       const rot = transforms.rotation;
       const tran = transforms.translation;
-      // console.log(rot);
       let layer = layerMap[dataUrl] && layerMap[dataUrl].layer;
       if (!layer) {
         layer = new Roames3DLayer({
@@ -151,7 +161,14 @@ export default class BoresightLayer extends CompositeLayer {
           zRotation: rot.zRotation,
           xTranslation: tran.xTranslation,
           yTranslation: tran.yTranslation,
-          zTranslation: tran.zTranslation
+          zTranslation: tran.zTranslation,
+          getPointColor: [
+            this.getRandomInt(255),
+            this.getRandomInt(255),
+            this.getRandomInt(255),
+            255
+          ],
+          bounds
         });
         layerMap[dataUrl] = {layer, dataURL: dataUrl, rotated: false, translated: false};
       } else if (layerMap[dataUrl].rotated) {
@@ -162,12 +179,15 @@ export default class BoresightLayer extends CompositeLayer {
         layer.updateLayerToggle(boundingBox, points, gpsPoints);
       }
 
+      if (bounds) {
+        layer.updateBounds(bounds);
+      }
+
       if (layer && layer.props && !layer.props.visible) {
         // Still has GPU resource but visibility is turned off so turn it back on so we can render it.
         layer = layer.clone({visible: true});
         layerMap[dataUrl].layer = layer;
       }
-
       subLayers.push(layer);
     }
 
@@ -203,6 +223,44 @@ export default class BoresightLayer extends CompositeLayer {
         )
       );
     }
+
+    // Create bounds for DH layer
+    if (this.props.getBoundBox.interEnd || this.props.getBoundBox.end) {
+      const start = this.props.getBoundBox.start;
+      const end = this.props.getBoundBox.end;
+      const widthPoint = this.props.getBoundBox.widthPoint;
+      const interEnd = this.props.getBoundBox.interEnd;
+      const interWidth = this.props.getBoundBox.interWidth;
+
+      let wPoint = interWidth || [0, 0, 0];
+      let to = interEnd;
+
+      if (end) {
+        to = end;
+      }
+
+      if (widthPoint) {
+        wPoint = widthPoint;
+      }
+
+      const boundBox = this._getBounds(start, to, wPoint);
+      this.setState({bounds: boundBox});
+
+      const polyLayer = new PolygonLayer({
+        id: 'polygon-bound-layer',
+        data: [{bounds: boundBox}],
+        pickable: false,
+        stroked: true,
+        wireframe: true,
+        opacity: 0.1,
+        getLineWidth: 1,
+        getPolygon: d => d.bounds,
+        getFillColor: [255, 0, 0]
+      });
+
+      subLayers.push(polyLayer);
+    }
+
     return subLayers;
   }
   /* eslint-enable complexity, max-statements */
@@ -297,6 +355,61 @@ export default class BoresightLayer extends CompositeLayer {
       return true;
     }
     return false;
+  }
+
+  _getBounds(startP, endP, widthP, defaultWidth = 0.0001) {
+    const {viewport} = this.context;
+    let widthSet = true;
+    if (widthP[0] === 0 && widthP[1] === 0 && widthP[2] === 0) {
+      widthSet = false;
+    }
+
+    const start = viewport.projectPosition(startP);
+    const to = viewport.projectPosition(endP);
+    const wPoint = viewport.projectPosition(widthP);
+
+    let width = defaultWidth;
+    if (widthSet) {
+      width = this._pointToLine(start, to, wPoint);
+    }
+
+    const line_vec = [start[0] - to[0], start[1] - to[1]];
+    const ext1 = this._getExtrusionOffset(line_vec, -1, width);
+    const ext2 = this._getExtrusionOffset(line_vec, 1, width);
+
+    const bounds_mercator = [
+      [start[0] + ext1[0], start[1] + ext1[1]],
+      [to[0] + ext1[0], to[1] + ext1[1]],
+      [to[0] + ext2[0], to[1] + ext2[1]],
+      [start[0] + ext2[0], start[1] + ext2[1]]
+    ];
+
+    const bounds = [
+      viewport.unprojectPosition(bounds_mercator[0]),
+      viewport.unprojectPosition(bounds_mercator[1]),
+      viewport.unprojectPosition(bounds_mercator[2]),
+      viewport.unprojectPosition(bounds_mercator[3])
+    ];
+
+    return bounds;
+  }
+
+  // Get the offset point from linevec with the width in the offeset direction
+  _getExtrusionOffset(line_vec, offset_direction, width) {
+    const perp_vec = [-1.0 * line_vec[1], line_vec[0]];
+    const norm = Math.sqrt(Math.pow(perp_vec[0], 2) + Math.pow(perp_vec[1], 2));
+    const unit_perp_vec = [perp_vec[0] / norm, perp_vec[1] / norm];
+
+    const offset_transform = offset_direction * width;
+    return [unit_perp_vec[0] * offset_transform, unit_perp_vec[1] * offset_transform];
+  }
+
+  // Shortest distance from p3 to the vector p1->p2
+  _pointToLine(p1, p2, p3) {
+    return (
+      Math.abs(p3[0] * (p2[1] - p1[1]) - p3[1] * (p2[0] - p1[0]) + p2[0] * p1[1] - p2[1] * p1[0]) /
+      Math.sqrt(Math.pow(p2[1] - p1[1], 2) + Math.pow(p2[0] - p1[0], 2))
+    );
   }
 }
 

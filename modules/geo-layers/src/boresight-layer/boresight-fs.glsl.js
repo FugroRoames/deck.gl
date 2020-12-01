@@ -43,7 +43,7 @@ void main(void) {
   // note: height can technically go to negative if rotated in a large angle
   if (weightone <= 0. || weighttwo <= 0.) {
     discard;
-  } 
+  }
 
   vec4 linearColor = getLinearColor(weighttwo - weightone);
   gl_FragColor = linearColor;

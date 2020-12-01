@@ -37,11 +37,39 @@ uniform float zRotationRad;
 uniform float xTranslation;
 uniform float yTranslation;
 uniform float zTranslation;
+uniform bool calcBound;
+uniform vec4 edge1;
+uniform vec4 edge2;
+
 attribute vec3 gpsPositions;
 attribute vec4 gpsDirections;
 
 varying vec4 vColor;
 varying vec2 unitPosition;
+varying float render;
+
+float calcTriangleArea(vec2 p1, vec2 p2, vec2 p3)
+{
+  return abs((p2.x * p1.y - p1.x * p2.y) + (p3.x * p2.y - p2.x * p3.y) + (p1.x * p3.y - p3.x * p1.y)) / 2.;
+}
+
+float inBounds(vec4 e1, vec4 e2, vec4 p)
+{
+  float pointArea = calcTriangleArea(e1.xy, p.xy, e2.zw) +
+    calcTriangleArea(e2.zw, p.xy, e2.xy) +
+    calcTriangleArea(e2.xy, p.xy, e1.zw) +
+    calcTriangleArea(p.xy, e1.zw, e1.xy);
+
+  float boundBoxArea = sqrt(pow((e1.x - e1.z), 2.) + pow((e1.y - e1.w), 2.)) * sqrt(pow((e1.w - e2.y), 2.) + pow((e2.x - e1.z), 2.));
+  float inside = 0.0;
+
+  // is inside
+  if (pointArea <= boundBoxArea) {
+    inside = 1.0;
+  }
+
+  return inside;
+}
 
 void main(void) {
   vec4 gpsD = qNorm(gpsDirections);
@@ -75,5 +103,11 @@ void main(void) {
   // Apply opacity to instance color, or return instance picking color
   vColor = vec4(lightColor, instanceColors.a * opacity);
   DECKGL_FILTER_COLOR(vColor, geometry);
+
+  if (calcBound) {    
+    render = inBounds(edge1, edge2, geometry.position); //vec4(gl_Position.xyz, 0.)); //
+  } else {
+    render = 1.;
+  }
 }
 `;

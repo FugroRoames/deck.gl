@@ -25,6 +25,7 @@ precision highp float;
 
 varying vec4 vColor;
 varying vec2 unitPosition;
+varying float render;
 
 void main(void) {
   geometry.uv = unitPosition;
@@ -32,6 +33,10 @@ void main(void) {
   float distToCenter = length(unitPosition);
 
   if (distToCenter > 1.0) {
+    discard;
+  }
+
+  if (render == 0.0) {
     discard;
   }
 
