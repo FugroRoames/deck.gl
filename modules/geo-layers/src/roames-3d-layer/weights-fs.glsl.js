@@ -3,6 +3,8 @@ export default `\
 
 precision highp float;
 
+varying float weightsTexture;
+
 void main()
 {
   float dist = length(gl_PointCoord - vec2(0.5, 0.5));
