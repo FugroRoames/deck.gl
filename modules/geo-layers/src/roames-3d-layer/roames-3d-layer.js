@@ -396,7 +396,7 @@ export default class Roames3DLayer extends CompositeLayer {
         height: textureSize,
         format: GL.R32F,
         type: GL.FLOAT,
-        dataFormat: GL.R,
+        dataFormat: GL.RED,
         ...TEXTURE_OPTIONS
       }),
       textureSize
