@@ -24,12 +24,13 @@ export default `\
 #define SHADER_NAME boresight-layer-vertex-shader
 
 attribute vec3 positions;
+attribute vec3 positions64Low;
 attribute vec2 texCoords;
 
 varying vec2 vTexCoords;
 
 void main(void) {
-  gl_Position = project_position_to_clipspace(positions, vec3(0.0), vec3(0.0));
+  gl_Position = project_position_to_clipspace(positions, positions64Low, vec3(0.0));
   vTexCoords = texCoords;
 }
 `;

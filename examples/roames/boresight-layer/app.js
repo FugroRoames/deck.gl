@@ -25,7 +25,8 @@ const INITIAL_VIEW_STATE = {
   zoom: 11,
   bearing: 0,
   pitch: 0,
-  maxPitch: 90
+  maxPitch: 90,
+  maxZoom: 21
 };
 
 const BOUND_BOX = {
@@ -76,6 +77,7 @@ export default function App({
   loader = Tiles3DLoader,
   loadOptions = {},
   colorRange = [
+    [128, 0, 128],
     [240, 8, 244],
     [253, 151, 6],
     [253, 253, 19],
@@ -85,14 +87,14 @@ export default function App({
     [9, 153, 3],
     [0, 0, 200]
   ],
-  colorDomain = [-10, 10],
+  colorDomain = [-1, 1],
   drawBoundingBox
 }) {
   registerLoaders(loader);
   const [initialViewState, setInitialViewState] = useState(INITIAL_VIEW_STATE);
   const [boundBoxState, setBoundBoxState] = useState(BOUND_BOX);
 
-  const onTilesetLoad = tileset => {
+  const onTilesetLoad = (tileset) => {
     // Recenter view to cover the new tileset
     const {cartographicCenter, zoom} = tileset;
     setInitialViewState({
@@ -142,7 +144,7 @@ export default function App({
     })
   ];
 
-  const onClick = info => {
+  const onClick = (info) => {
     if (!drawBoundingBox || boundBoxState.widthPoint) {
       setBoundBoxState({BOUND_BOX});
       return;
@@ -193,7 +195,7 @@ export default function App({
     }
   };
 
-  const onViewStateChange = event => {
+  const onViewStateChange = (event) => {
     const viewState = event.viewState;
     const viewId = event.viewId;
 
@@ -205,7 +207,7 @@ export default function App({
     }
 
     if (viewId === 'main') {
-      setInitialViewState(currentViewStates => ({
+      setInitialViewState((currentViewStates) => ({
         main: {
           ...viewState,
           target: null
@@ -221,7 +223,7 @@ export default function App({
         }
       }));
     } else {
-      setInitialViewState(currentViewStates => ({
+      setInitialViewState((currentViewStates) => ({
         main: {
           ...currentViewStates.main,
           longitude: viewState.longitude,

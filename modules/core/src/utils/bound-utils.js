@@ -1,5 +1,6 @@
 import {projectPosition} from '../shaderlib/project/project-functions';
 import {COORDINATE_SYSTEM} from '../../src/lib/constants';
+import {fp64LowPart} from './math-utils';
 
 // Unproject all 4 corners of the current screen coordinates into world coordinates (lng/lat)
 // Takes care of viewport has non zero bearing/pitch (i.e axis not aligned with world coordiante system)
@@ -112,8 +113,8 @@ export function commonScreenToWorldBounds(commonBounds, viewport) {
 
 export function getBounds(points) {
   // Now build bounding box in world space (aligned to world coordiante system)
-  const x = points.map(p => p[0]);
-  const y = points.map(p => p[1]);
+  const x = points.map((p) => p[0]);
+  const y = points.map((p) => p[1]);
 
   const xMin = Math.min.apply(null, x);
   const xMax = Math.max.apply(null, x);
@@ -150,6 +151,22 @@ export function packVertices(points, dimensions = 2) {
   }
   return scratchArray;
 }
+
+const scratchArray64 = new Float32Array(24);
+// For given rectangle bounds generates two triangles vertices that coverit completely
+export function packVertices64(points, dimensions = 2) {
+  let index = 0;
+  for (const point of points) {
+    for (let i = 0; i < dimensions; i++) {
+      const value = point[i] || 0;
+      scratchArray64[index + i] = value;
+      scratchArray64[index + i + dimensions] = fp64LowPart(value);
+    }
+    index += 2 * dimensions;
+  }
+  return scratchArray64;
+}
+
 // Expands boundingBox:[xMin, yMin, xMax, yMax] to match aspect ratio of given width and height
 export function scaleToAspectRatio(boundingBox, width, height) {
   const [xMin, yMin, xMax, yMax] = boundingBox;

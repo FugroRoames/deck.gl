@@ -39,7 +39,7 @@ export default class TriangleLayer extends Layer {
     const {gl} = this.context;
     const attributeManager = this.getAttributeManager();
     attributeManager.add({
-      positions: {size: 3, noAlloc: true},
+      positions: {size: 3, noAlloc: true, type: GL.DOUBLE, fp64: true},
       texCoords: {size: 2, noAlloc: true}
     });
     this.setState({

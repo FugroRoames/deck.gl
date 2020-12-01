@@ -2148,20 +2148,6 @@
   resolved "https://registry.yarnpkg.com/@mapbox/whoots-js/-/whoots-js-3.1.0.tgz#497c67a1cef50d1a2459ba60f315e448d2ad87fe"
   integrity sha512-Es6WcD0nO5l+2BOQS4uLfNPYQaNDfbot3X1XUoloz+x0mPDS3eeORZJl06HXjwBG1fOGwCRnzK88LMdxKRrd6Q==
 
-"@math.gl/core@3.3.0", "@math.gl/core@^3.3.0":
-  version "3.3.0"
-  resolved "https://registry.yarnpkg.com/@math.gl/core/-/core-3.3.0.tgz#5fa6581c8ae8ff7ea7a2c03f5a8b8931879044f9"
-  integrity sha512-3ghPZ3YRX+72wNoUEs8npwUcP3kOvaTZrLHxL+tDydvULkLLcOfwPisylNm3yFwRfyn9YownBbxlqa/PsbWPNg==
-  dependencies:
-    "@babel/runtime" "^7.0.0"
-    gl-matrix "^3.0.0"
-
-<<<<<<< HEAD
-"@math.gl/culling@^3.3.0":
-  version "3.3.0"
-  resolved "https://registry.yarnpkg.com/@math.gl/culling/-/culling-3.3.0.tgz#48c9c059711796c7720be7c905657902362e6358"
-  integrity sha512-STNAH/pl3f4b/J45QHMGI8eLRXsUr3Q/GfMMGzi7zAd5uljSWiQ42m3QvQBVyrsC/IjIhTCBDFeHHPWhCclIXg==
-=======
 "@math.gl/core@3.2.2":
   version "3.2.2"
   resolved "https://registry.yarnpkg.com/@math.gl/core/-/core-3.2.2.tgz#929eccc724b8fafce92e3762988c2f07859232a9"
@@ -2170,14 +2156,30 @@
     "@babel/runtime" "^7.0.0"
     gl-matrix "^3.0.0"
 
-"@math.gl/culling@^3.2.0", "@math.gl/culling@^3.2.1":
-  version "3.2.1"
-  resolved "https://registry.yarnpkg.com/@math.gl/culling/-/culling-3.2.1.tgz#1b1bab19f9d1e2cbe2df87e44be4a6faf9b5a510"
-  integrity sha512-RbKdqJs3jWEJy+WyaAhGS2dJsMAgc7jwpRWZdAOgziRTJMYbCj1QgLJ3ZgXZgahXLC5eyMakKrKVsIiJDCzo8A==
->>>>>>> DATA-435-render-tiles-3d-to-height-map initial commit that enables tiles 3d point cloud to be rendered as heightmap
+"@math.gl/core@3.3.0", "@math.gl/core@^3.3.0":
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/@math.gl/core/-/core-3.3.0.tgz#5fa6581c8ae8ff7ea7a2c03f5a8b8931879044f9"
+  integrity sha512-3ghPZ3YRX+72wNoUEs8npwUcP3kOvaTZrLHxL+tDydvULkLLcOfwPisylNm3yFwRfyn9YownBbxlqa/PsbWPNg==
+  dependencies:
+    "@babel/runtime" "^7.0.0"
+    gl-matrix "^3.0.0"
+
+"@math.gl/culling@^3.3.0":
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/@math.gl/culling/-/culling-3.3.0.tgz#48c9c059711796c7720be7c905657902362e6358"
+  integrity sha512-STNAH/pl3f4b/J45QHMGI8eLRXsUr3Q/GfMMGzi7zAd5uljSWiQ42m3QvQBVyrsC/IjIhTCBDFeHHPWhCclIXg==
   dependencies:
     "@babel/runtime" "^7.0.0"
     "@math.gl/core" "3.3.0"
+    gl-matrix "^3.0.0"
+
+"@math.gl/geospatial@^3.2.1":
+  version "3.2.2"
+  resolved "https://registry.yarnpkg.com/@math.gl/geospatial/-/geospatial-3.2.2.tgz#1ffd9a0f037083837c20acfbea2882e7c48741a9"
+  integrity sha512-pQUMd6DPK3+j72A914wCeS+G3hdnVDnn4W+u+0FexmeyXhbegV0UcEh+NVDh3Q3T3aXc6O1kzNta0RWC3mLngw==
+  dependencies:
+    "@babel/runtime" "^7.0.0"
+    "@math.gl/core" "3.2.2"
     gl-matrix "^3.0.0"
 
 "@math.gl/geospatial@^3.3.0":
@@ -2189,26 +2191,10 @@
     "@math.gl/core" "3.3.0"
     gl-matrix "^3.0.0"
 
-<<<<<<< HEAD
 "@math.gl/polygon@^3.3.0":
   version "3.3.0"
   resolved "https://registry.yarnpkg.com/@math.gl/polygon/-/polygon-3.3.0.tgz#b2f3bc2d89055cef5f28a3d59e5d97580407f540"
   integrity sha512-wg7259E1IVOblJy/dsQETv4Ng4Tr3fgnwzIK9oJaYZj8jljVCdub2TfLgcEtfkXF/w1dhiAqA8WYbk32Dfz2uQ==
-=======
-"@math.gl/geospatial@^3.2.1":
-  version "3.2.2"
-  resolved "https://registry.yarnpkg.com/@math.gl/geospatial/-/geospatial-3.2.2.tgz#1ffd9a0f037083837c20acfbea2882e7c48741a9"
-  integrity sha512-pQUMd6DPK3+j72A914wCeS+G3hdnVDnn4W+u+0FexmeyXhbegV0UcEh+NVDh3Q3T3aXc6O1kzNta0RWC3mLngw==
-  dependencies:
-    "@babel/runtime" "^7.0.0"
-    "@math.gl/core" "3.2.2"
-    gl-matrix "^3.0.0"
-
-"@math.gl/polygon@^3.2.1":
-  version "3.2.1"
-  resolved "https://registry.yarnpkg.com/@math.gl/polygon/-/polygon-3.2.1.tgz#4aa7c414a659dbde2eb8650b2bf876174999c48d"
-  integrity sha512-Dcymc9z/Ytjs4YjdKQvOZ2akreoHqAVr/uy4xhEJdGLLPW06VyZaLVXsfg2ALPQlPRQMritCu+ahjVm7jgTF2w==
->>>>>>> DATA-435-render-tiles-3d-to-height-map initial commit that enables tiles 3d point cloud to be rendered as heightmap
   dependencies:
     "@math.gl/core" "3.3.0"
 
@@ -8861,6 +8847,11 @@ prettier@1.14.3:
   version "1.14.3"
   resolved "https://registry.yarnpkg.com/prettier/-/prettier-1.14.3.tgz#90238dd4c0684b7edce5f83b0fb7328e48bd0895"
   integrity sha512-qZDVnCrnpsRJJq5nSsiHCE3BYMED2OtsI+cmzIzF1QIfqm5ALf8tEJcO27zV1gKNKRPdhjO0dNWnrzssDQ1tFg==
+
+prettier@^2.2.1:
+  version "2.2.1"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.2.1.tgz#795a1a78dd52f073da0cd42b21f9c91381923ff5"
+  integrity sha512-PqyhM2yCjg/oKkFPtTGUojv7gnZAoG80ttl45O6x2Ug/rMJw4wcc9k6aaf2hibP7BGVCCM33gZoGjyvt9mm16Q==
 
 pretty-error@^2.0.2:
   version "2.1.1"

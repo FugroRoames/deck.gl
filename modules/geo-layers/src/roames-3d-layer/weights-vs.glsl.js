@@ -17,14 +17,11 @@ uniform float zTranslation;
 
 void main()
 {
-  // Normalise the gps direction
-  vec4 normGpsD = qNorm(gpsDirections);
-  
   // Quaternion we want to apply in respect to the gps direction 
-  vec4 r = qm(normGpsD, qm(quaternion, qi(normGpsD)));
+  vec4 r = qm(gpsDirections, qm(quaternion, qi(gpsDirections)));
 
   // translation vector rotated in respect to the gps direction 
-  vec4 t = qm(normGpsD, qm(vec4(xTranslation, yTranslation, zTranslation, 0.), qi(normGpsD)));
+  vec4 t = qm(gpsDirections, qm(vec4(xTranslation, yTranslation, zTranslation, 0.), qi(gpsDirections)));
 
   // vector from point to gps
   vec4 v = vec4(positions-gpsPositions, 0.);
@@ -42,11 +39,9 @@ void main()
 
   vec3 commonPosition = project_position(p);
 
-  // weightsTexture = vec4(commonPosition.z, 0., 0., 1.);
-  
   // map xy from commonBounds to [-1, 1]
   gl_Position.xy = (commonPosition.xy - commonBounds.xy) / (commonBounds.zw - commonBounds.xy) ;
   gl_Position.xy = (gl_Position.xy * 2.) - (1.);
-  gl_Position.z = 1.;//log(height)/10.;
+  gl_Position.z = 1.;
 }
 `;

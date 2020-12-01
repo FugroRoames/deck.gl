@@ -26,6 +26,7 @@ import fs from './boresight-fs.glsl';
 
 const defaultProps = {
   count: 0, // number of triangles to be rendered
+  nullValue: 0,
   textureone: null,
   texturetwo: null
 };
@@ -39,7 +40,7 @@ export default class TriangleLayer extends Layer {
     const {gl} = this.context;
     const attributeManager = this.getAttributeManager();
     attributeManager.add({
-      positions: {size: 3, noAlloc: true},
+      positions: {size: 3, noAlloc: true, type: GL.DOUBLE, fp64: true},
       texCoords: {size: 2, noAlloc: true}
     });
     this.setState({
@@ -64,14 +65,15 @@ export default class TriangleLayer extends Layer {
 
   draw({uniforms}) {
     const {model} = this.state;
-    const {textureone, texturetwo, colorTexture, colorDomain} = this.props;
+    const {textureone, texturetwo, colorTexture, colorDomain, nullValue} = this.props;
     model
       .setUniforms({
         ...uniforms,
         textureone,
         texturetwo,
         colorTexture,
-        colorDomain
+        colorDomain,
+        nullValue
       })
       .draw();
   }

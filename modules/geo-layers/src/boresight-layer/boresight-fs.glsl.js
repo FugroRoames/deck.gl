@@ -29,19 +29,18 @@ uniform sampler2D texturetwo;
 varying vec2 vTexCoords;
 uniform sampler2D colorTexture;
 uniform vec2 colorDomain;
+uniform float nullValue;
 
 vec4 getLinearColor(float value) {
   float factor = clamp((value - colorDomain[0])/(colorDomain[1] - colorDomain[0]), 0., 1.);
-  vec4 color = texture2D(colorTexture, vec2(factor, 0.5));
+  vec4 color = texture2D(colorTexture, vec2(factor, 0.));
   return color;
 }
 
 void main(void) {
   float weightone = texture2D(textureone, vTexCoords).r;
   float weighttwo = texture2D(texturetwo, vTexCoords).r;
-  // discard pixels with 0 weight.
-  // note: height can technically go to negative if rotated in a large angle
-  if (weightone <= 0. || weighttwo <= 0.) {
+  if (weightone == nullValue || weighttwo == nullValue) {
     discard;
   }
 

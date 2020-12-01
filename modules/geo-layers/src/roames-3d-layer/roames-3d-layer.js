@@ -1,5 +1,5 @@
 import GL from '@luma.gl/constants';
-import {Buffer, Transform, Texture2D, getParameters, isWebGL2} from '@luma.gl/core';
+import {Buffer, Transform, Texture2D, getParameters} from '@luma.gl/core';
 
 import {addMetersToLngLat} from '@math.gl/web-mercator';
 import {Ellipsoid} from '@math.gl/geospatial';
@@ -24,7 +24,8 @@ import {colorRangeToFlatArray} from '../../../aggregation-layers/src/utils/color
 import {
   updateBounds,
   getTextureCoordinates,
-  packVertices
+  packVertices,
+  packVertices64
 } from '../../../core/src/utils/bound-utils';
 
 import * as nodeUrl from 'url';
@@ -36,9 +37,9 @@ const defaultProps = {
   data: null,
   loadOptions: {},
   loader: Tiles3DLoader,
-  onTilesetLoad: tileset3d => {},
-  onTileLoad: tileHeader => {},
-  onTileUnload: tileHeader => {},
+  onTilesetLoad: (tileset3d) => {},
+  onTileLoad: (tileHeader) => {},
+  onTileUnload: (tileHeader) => {},
   onTileError: (tile, message, url) => {},
   xRotation: 0,
   yRotation: 0,
@@ -122,6 +123,7 @@ export default class Roames3DLayer extends CompositeLayer {
     const {viewport} = this.context;
     const {worldBounds, textureSize, tileset3d, totalWeightsTransform} = this.state;
     const changeFlags = this._getChangeFlags(opts);
+    const {nullValue} = props;
 
     if (props.data && props.data !== oldProps.data) {
       this._loadTileset(props.data);
@@ -142,7 +144,7 @@ export default class Roames3DLayer extends CompositeLayer {
       );
       this.setState(newState);
       this._updateTileset(tileset3d);
-      totalWeightsTransform.getFramebuffer().clear({color: true});
+      totalWeightsTransform.getFramebuffer().clear({color: [nullValue, 0.0, 0.0, 0.0]});
     }
 
     if (props.colorRange !== oldProps.colorRange) {
@@ -160,8 +162,9 @@ export default class Roames3DLayer extends CompositeLayer {
       return null;
     }
 
+    const {nullValue} = this.props;
     if (this.context.viewport.zoom !== this.state.zoom) {
-      this.state.totalWeightsTransform.getFramebuffer().clear({color: true});
+      this.state.totalWeightsTransform.getFramebuffer().clear({color: [nullValue, 0.0, 0.0, 0.0]});
     }
 
     const subLayers = [];
@@ -260,7 +263,7 @@ export default class Roames3DLayer extends CompositeLayer {
       return null;
     }
     const sublayers = tileset3d.tiles
-      .map(tile => {
+      .map((tile) => {
         const layers = [];
 
         if (boundingBox) {
@@ -393,6 +396,7 @@ export default class Roames3DLayer extends CompositeLayer {
         height: textureSize,
         format: GL.R32F,
         type: GL.FLOAT,
+        dataFormat: GL.R,
         ...TEXTURE_OPTIONS
       }),
       textureSize
@@ -429,7 +433,7 @@ export default class Roames3DLayer extends CompositeLayer {
     const {gl} = this.context;
     this.setState({
       triPositionBuffer: new Buffer(gl, {
-        byteLength: 48,
+        byteLength: 96,
         accessor: {size: 3}
       }),
       triTexCoordBuffer: new Buffer(gl, {
@@ -450,9 +454,9 @@ export default class Roames3DLayer extends CompositeLayer {
 
     const {viewport} = this.context;
 
-    triPositionBuffer.subData(packVertices(viewportCorners, 3));
+    triPositionBuffer.subData(packVertices64(viewportCorners, 3));
 
-    const textureBounds = viewportCorners.map(p =>
+    const textureBounds = viewportCorners.map((p) =>
       getTextureCoordinates(viewport.projectPosition(p), normalizedCommonBounds)
     );
     triTexCoordBuffer.subData(packVertices(textureBounds, 2));
@@ -583,13 +587,13 @@ export default class Roames3DLayer extends CompositeLayer {
       {
         id: `${this.id}-polygonlayer-${tileHeader.id}`,
         data,
-        getPolygon: d => d.polygon,
+        getPolygon: (d) => d.polygon,
         extruded: true,
         filled: false,
         stroked: true,
         wireframe: true,
         getElevation: z_shift,
-        getColor: d => [255, 0, 0, 255]
+        getColor: (d) => [255, 0, 0, 255]
       }
     );
   }
@@ -771,8 +775,7 @@ export default class Roames3DLayer extends CompositeLayer {
         data: colors,
         width: colorRange.length,
         height: 1,
-        format: isWebGL2(this.context.gl) ? GL.RGBA32F : GL.RGBA,
-        type: GL.FLOAT,
+        format: GL.RGBA32F,
         ...TEXTURE_OPTIONS
       });
     }

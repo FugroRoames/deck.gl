@@ -30,6 +30,7 @@ uniform float threshold;
 uniform float aggregationMode;
 
 attribute vec3 positions;
+attribute vec3 positions64Low;
 attribute vec2 texCoords;
 
 varying vec2 vTexCoords;
@@ -37,7 +38,7 @@ varying float vIntensityMin;
 varying float vIntensityMax;
 
 void main(void) {
-  gl_Position = project_position_to_clipspace(positions, vec3(0.0), vec3(0.0));
+  gl_Position = project_position_to_clipspace(positions, positions64Low, vec3(0.0));
   vTexCoords = texCoords;
   vec4 maxTexture = texture2D(maxTexture, vec2(0.5));
   float maxValue = aggregationMode < 0.5 ? maxTexture.r : maxTexture.g;

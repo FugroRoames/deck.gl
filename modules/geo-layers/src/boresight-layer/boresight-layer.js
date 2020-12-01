@@ -1,5 +1,5 @@
 import GL from '@luma.gl/constants';
-import {Buffer, Texture2D, getParameters, isWebGL2} from '@luma.gl/core';
+import {Buffer, Texture2D, getParameters} from '@luma.gl/core';
 
 import {CompositeLayer} from '@deck.gl/core';
 
@@ -15,8 +15,13 @@ import {colorRangeToFlatArray} from '../../../aggregation-layers/src/utils/color
 import {
   updateBounds,
   getTextureCoordinates,
-  packVertices
+  packVertices,
+  packVertices64
 } from '../../../core/src/utils/bound-utils';
+
+const NULL_VALUE = -2147483648;
+const SIZE_2K = 2048;
+
 const defaultProps = {
   getPointColor: [0, 0, 0],
   colorDomain: {type: 'array', value: [-10, 10], optional: true},
@@ -39,9 +44,10 @@ const defaultProps = {
   gpsPoints: false,
   getBoundBox: {start: null, end: null, widthPoint: null, interEnd: null, interWidth: null},
   bounds: null,
-  onTilesetLoad: tileset3d => {},
-  onTileLoad: tileHeader => {},
-  onTileUnload: tileHeader => {},
+  nullValue: NULL_VALUE,
+  onTilesetLoad: (tileset3d) => {},
+  onTileLoad: (tileHeader) => {},
+  onTileUnload: (tileHeader) => {},
   onTileError: (tile, message, url) => {}
 };
 
@@ -56,7 +62,7 @@ const TEXTURE_OPTIONS = {
   dataFormat: GL.RGBA
 };
 
-const SIZE_2K = 2048;
+const dummyArray = new Float64Array();
 
 export default class BoresightLayer extends CompositeLayer {
   initializeState() {
@@ -135,7 +141,7 @@ export default class BoresightLayer extends CompositeLayer {
   /* eslint-disable complexity, max-statements */
   renderLayers() {
     const {layerMap, bounds} = this.state;
-    const {data, boundingBox, points, gpsPoints} = this.props;
+    const {data, boundingBox, points, gpsPoints, nullValue} = this.props;
 
     const subLayers = [];
     // Calculate the texture for each tiles 3d dataset
@@ -155,6 +161,7 @@ export default class BoresightLayer extends CompositeLayer {
           boundingBox,
           gpsPoints,
           points,
+          nullValue,
           onTilesetLoad: this.props.onTilesetLoad,
           xRotation: rot.xRotation,
           yRotation: rot.yRotation,
@@ -193,7 +200,7 @@ export default class BoresightLayer extends CompositeLayer {
 
     // Get the updated textures for each layer
     const textures = [];
-    subLayers.map(r3dlayer => {
+    subLayers.map((r3dlayer) => {
       textures.push(r3dlayer.getTexture());
     });
 
@@ -210,7 +217,10 @@ export default class BoresightLayer extends CompositeLayer {
           {
             data: {
               attributes: {
-                positions: triPositionBuffer,
+                positions: {
+                  buffer: triPositionBuffer,
+                  value: dummyArray
+                },
                 texCoords: triTexCoordBuffer
               }
             },
@@ -218,7 +228,8 @@ export default class BoresightLayer extends CompositeLayer {
             colorTexture: this.state.colorTexture,
             textureone: textures[0],
             texturetwo: textures[1],
-            colorDomain: this.props.colorDomain
+            colorDomain: this.props.colorDomain,
+            nullValue
           }
         )
       );
@@ -254,7 +265,7 @@ export default class BoresightLayer extends CompositeLayer {
         wireframe: true,
         opacity: 0.1,
         getLineWidth: 1,
-        getPolygon: d => d.bounds,
+        getPolygon: (d) => d.bounds,
         getFillColor: [255, 0, 0]
       });
 
@@ -283,7 +294,7 @@ export default class BoresightLayer extends CompositeLayer {
     const {gl} = this.context;
     this.setState({
       triPositionBuffer: new Buffer(gl, {
-        byteLength: 48,
+        byteLength: 96,
         accessor: {size: 3}
       }),
       triTexCoordBuffer: new Buffer(gl, {
@@ -304,9 +315,9 @@ export default class BoresightLayer extends CompositeLayer {
 
     const {viewport} = this.context;
 
-    triPositionBuffer.subData(packVertices(viewportCorners, 3));
+    triPositionBuffer.subData(packVertices64(viewportCorners, 3));
 
-    const textureBounds = viewportCorners.map(p =>
+    const textureBounds = viewportCorners.map((p) =>
       getTextureCoordinates(viewport.projectPosition(p), normalizedCommonBounds)
     );
     triTexCoordBuffer.subData(packVertices(textureBounds, 2));
@@ -316,7 +327,7 @@ export default class BoresightLayer extends CompositeLayer {
     const {colorRange} = opts.props;
     let {colorTexture} = this.state;
 
-    const colors = colorRangeToFlatArray(colorRange, true);
+    const colors = colorRangeToFlatArray(colorRange, false, Uint8Array);
     if (colorTexture) {
       colorTexture.setImageData({
         data: colors,
@@ -327,8 +338,7 @@ export default class BoresightLayer extends CompositeLayer {
         data: colors,
         width: colorRange.length,
         height: 1,
-        format: isWebGL2(this.context.gl) ? GL.RGBA32F : GL.RGBA,
-        type: GL.FLOAT,
+        format: GL.RGBA,
         ...TEXTURE_OPTIONS
       });
     }

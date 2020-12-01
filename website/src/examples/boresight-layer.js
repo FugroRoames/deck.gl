@@ -1,4 +1,4 @@
-import React, {Component} from 'react';
+import React, {Component, useRef, useEffect } from 'react';
 import App from 'website-roames/boresight-layer/app';
 import {CesiumIonLoader, Tiles3DLoader} from '@loaders.gl/3d-tiles';
 
@@ -9,35 +9,35 @@ import makeExample from '../components/example';
 class BoresightDemo extends Component {
   static title = 'DZ - Flight Path 1 vs Flight Path 2';
   static parameters = {
-    rotX: {displayName: 'Rotation X', value: 0, step: 0.001, type: 'range', min: -10, max: 10},
-    rotY: {displayName: 'Rotation Y', value: 0, step: 0.001, type: 'range', min: -10, max: 10},
-    rotZ: {displayName: 'Rotation Z', value: 0, step: 0.001, type: 'range', min: -10, max: 10},
+    rotX: {displayName: 'Rotation X', value: 0, step: 0.001, type: 'range', min: -2, max: 2},
+    rotY: {displayName: 'Rotation Y', value: 0, step: 0.001, type: 'range', min: -2, max: 2},
+    rotZ: {displayName: 'Rotation Z', value: 0, step: 0.001, type: 'range', min: -2, max: 2},
     tranX: {
       displayName: 'Translation X',
       value: 0,
-      step: 0.001,
+      step: 0.01,
       type: 'range',
-      min: -100,
-      max: 100
+      min: -10,
+      max: 10
     },
     tranY: {
       displayName: 'Translation Y',
       value: 0,
-      step: 0.001,
+      step: 0.01,
       type: 'range',
-      min: -100,
-      max: 100
+      min: -10,
+      max: 10
     },
     tranZ: {
       displayName: 'Translation Z',
       value: 0,
-      step: 0.001,
+      step: 0.01,
       type: 'range',
-      min: -100,
-      max: 100
+      min: -10,
+      max: 10
     },
-    colorMin: {displayName: 'Color Min', value: -10},
-    colorMax: {displayName: 'Color Max', value: 10},
+    colorMin: {displayName: 'Color Min', value: -1},
+    colorMax: {displayName: 'Color Max', value: 1},
     data1: {
       displayName: 'Flight line 1',
       value: 'https://d3hwnz5sahda3g.cloudfront.net/flightline1/tileset.json'
@@ -57,18 +57,54 @@ class BoresightDemo extends Component {
     // https://roames-hpc-home.s3-ap-southeast-2.amazonaws.com/users/peteroloughlin/gpspos2/tileset.json
   };
 
+  static colorRange = [
+    [128, 0, 128],
+    [240, 8, 244],
+    [253, 151, 6],
+    [253, 253, 19],
+    [251, 51, 51],
+    [0, 252, 253],
+    [99, 253, 97],
+    [9, 153, 3],
+    [0, 0, 200]
+  ];
+
   static mapStyle = 'mapbox://styles/mapbox/light-v9';
 
   static renderInfo(meta) {
+    const props = {
+      id: "colorRange",
+      style: {
+        "zIndex": "10",
+        "width":"100%",
+        "height": "8px"
+      }
+    };
+
+    const {colorRange} = BoresightDemo;
+    const Canvas = props => {
+      const canvasRef = useRef(null)
+      useEffect(() => {
+        const canvas = canvasRef.current
+        const context = canvas.getContext('2d')
+
+        for (let i = 0; i < colorRange.length; ++i) {
+          let start = i/(colorRange.length) * context.canvas.width;
+          let end = (i+1)/(colorRange.length) * context.canvas.width;
+          context.fillStyle = `rgb(${colorRange[i][0]}, ${colorRange[i][1]}, ${colorRange[i][2]})`;
+          context.fillRect(start, 0, end, context.canvas.height);
+        }
+      }, [])
+
+
+      return <canvas ref={canvasRef} {...props}/>
+    }
+
     return (
       <div>
         <p>Point cloud to DZ.</p>
         <div>
-          <img
-            src={withPrefix('/images/dz_boresight.png')}
-            alt="color scale"
-            style={{height: 8, width: '100%'}}
-          />
+          {new Canvas(props)}
         </div>
         <p>Change Flight Path 1 Rotation</p>
       </div>
@@ -126,6 +162,7 @@ class BoresightDemo extends Component {
         points={points}
         gpsPoints={gpsPoints}
         loader={Tiles3DLoader}
+        colorRange={BoresightDemo.colorRange}
         loadOptions={{}}
         drawBoundingBox={drawBoundingBox}
         // loader={CesiumIonLoader}
