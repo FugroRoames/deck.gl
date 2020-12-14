@@ -29,9 +29,9 @@ const RESOLUTION = 2; // (number of common space pixels) / (number texels)
 const SIZE_2K = 2048;
 
 const defaultProps = {
-  getPosition: {type: 'accessor', value: (x) => x.position},
-  getGpsPosition: {type: 'accessor', value: (x) => x.gpsPosition},
-  getGpsDirection: {type: 'accessor', value: (x) => x.gpsDirection},
+  getPosition: {type: 'accessor', value: x => x.position},
+  getGpsPosition: {type: 'accessor', value: x => x.gpsPosition},
+  getGpsDirection: {type: 'accessor', value: x => x.gpsDirection},
   radiusPixels: {type: 'number', min: 1, max: 100, value: 5},
   threshold: {type: 'number', min: 0, max: 1, value: 0.05},
   totalWeightsTransform: null,
@@ -98,7 +98,8 @@ export default class RoamesHeightLayer extends AggregationLayer {
       quaternion,
       xTranslation,
       yTranslation,
-      zTranslation
+      zTranslation,
+      oldVisible: true
     });
   }
 
@@ -116,7 +117,7 @@ export default class RoamesHeightLayer extends AggregationLayer {
 
     super.updateState(opts);
     const {props} = opts;
-    const {worldBounds, textureSize} = this.state;
+    const {worldBounds, textureSize, oldVisible} = this.state;
     const changeFlags = this._getChangeFlags(opts);
 
     if (changeFlags.dataChanged) {
@@ -134,7 +135,12 @@ export default class RoamesHeightLayer extends AggregationLayer {
       );
       this.setState(newState);
     }
-    this._updateWeightmap();
+
+    if (props.visible && oldVisible) {
+      this._updateWeightmap();
+    } else {
+      this.setState({oldVisible: props.visible});
+    }
 
     this.setState({zoom: opts.context.viewport.zoom});
   }
@@ -218,7 +224,9 @@ export default class RoamesHeightLayer extends AggregationLayer {
     this.setState({textureSize});
     if (!floatTargetSupport) {
       log.warn(
-        `RoamesHeightLayer: ${this.id} rendering to float texture not supported, fallingback to low precession format`
+        `RoamesHeightLayer: ${
+          this.id
+        } rendering to float texture not supported, fallingback to low precession format`
       )();
     }
   }

@@ -39,3 +39,4 @@ export {default as _MultiIconLayer} from './text-layer/multi-icon-layer/multi-ic
 export {
   default as RoamesPointCloudLayer
 } from './roames-point-cloud-layer/roames-point-cloud-layer';
+export {default as RoamesIconLayer} from './roames-icon-layer/roames-icon-layer';

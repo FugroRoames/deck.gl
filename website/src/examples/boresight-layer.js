@@ -40,13 +40,15 @@ class BoresightDemo extends Component {
     colorMax: {displayName: 'Color Max', value: 1},
     data1: {
       displayName: 'Flight line 1',
-      value: 'https://d3hwnz5sahda3g.cloudfront.net/flightline1/tileset.json'
+      value: 'https://d3hwnz5sahda3g.cloudfront.net/petertestL/tileset.json'
+      // value: 'https://d3hwnz5sahda3g.cloudfront.net/flightline1/tileset.json'
       // value:
       // 'https://d2p2h9bgfn7gmq.cloudfront.net/users/daikiichiyama/0010000_1/tileset.json?Policy=eyJTdGF0ZW1lbnQiOiBbeyJSZXNvdXJjZSI6Imh0dHBzOi8vZDJwMmg5YmdmbjdnbXEuY2xvdWRmcm9udC5uZXQvdXNlcnMvZGFpa2lpY2hpeWFtYS8qIiwiQ29uZGl0aW9uIjp7IkRhdGVMZXNzVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNjY3OTYyOTI4fX19XX0_&Signature=BmAww66GtiL0hPIB-l1o8gES-Ljey2BlFFojqCnkxlKauLZE8GYYZMWQopqgTZayTNgc-3omTd1KD5EitEUxtORVwLNyY3OBkoub~L~fwNn-lF9qIyA8j8pAQKfmLPJ2GuxU~Opaay~rNxzDwk1W4BAOUeU94w-nw4hWp7zE5CALH94fL0K8npwopsyy6UqEB42ox-0vSfG3k6oV3d7Z6RL4RV8ksdEHJ05py8MYLjT5y3wM1WXRbNmABdw9wWEodJlTg0gxQysZCcp76riSsZQ~icsidV3nXhM6-qTPezY4mFO6QG6z01fkQgIxywEhzBa~tDjl6U62L14egN8f4A__&Key-Pair-Id=APKAJNAMH5VW75CUXS4Q'
     },
     data2: {
       displayName: 'Flight line 2',
-      value: 'https://d3hwnz5sahda3g.cloudfront.net/flightline2/tileset.json'
+      value: 'https://d3hwnz5sahda3g.cloudfront.net/petertestM/tileset.json'
+      // value: 'https://d3hwnz5sahda3g.cloudfront.net/flightline2/tileset.json'
       // value:
       // 'https://d2p2h9bgfn7gmq.cloudfront.net/users/daikiichiyama/0030000_1/tileset.json?Policy=eyJTdGF0ZW1lbnQiOiBbeyJSZXNvdXJjZSI6Imh0dHBzOi8vZDJwMmg5YmdmbjdnbXEuY2xvdWRmcm9udC5uZXQvdXNlcnMvZGFpa2lpY2hpeWFtYS8qIiwiQ29uZGl0aW9uIjp7IkRhdGVMZXNzVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNjY3OTYyOTI4fX19XX0_&Signature=BmAww66GtiL0hPIB-l1o8gES-Ljey2BlFFojqCnkxlKauLZE8GYYZMWQopqgTZayTNgc-3omTd1KD5EitEUxtORVwLNyY3OBkoub~L~fwNn-lF9qIyA8j8pAQKfmLPJ2GuxU~Opaay~rNxzDwk1W4BAOUeU94w-nw4hWp7zE5CALH94fL0K8npwopsyy6UqEB42ox-0vSfG3k6oV3d7Z6RL4RV8ksdEHJ05py8MYLjT5y3wM1WXRbNmABdw9wWEodJlTg0gxQysZCcp76riSsZQ~icsidV3nXhM6-qTPezY4mFO6QG6z01fkQgIxywEhzBa~tDjl6U62L14egN8f4A__&Key-Pair-Id=APKAJNAMH5VW75CUXS4Q'
     },

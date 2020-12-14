@@ -104,7 +104,8 @@ export {
   SolidPolygonLayer,
   GeoJsonLayer,
   TextLayer,
-  RoamesPointCloudLayer
+  RoamesPointCloudLayer,
+  RoamesIconLayer
 } from '@deck.gl/layers';
 
 export {

@@ -19,6 +19,18 @@ const FLIGHT_TWO_URL =
 // const FLIGHT_FOUR_URL =
 // 'https://d2p2h9bgfn7gmq.cloudfront.net/20072099-20201020150357/final/0040000_1/tileset.json';
 
+const GROUND_POINT_DATA = [
+  {
+    name: 'Garozzo St',
+    code: 'BE',
+    address: 'Garozzo Street Bondall 4034',
+    entries: '6719',
+    exits: '16917',
+    // "coordinates":[153.05002661339216,-27.211739662565794, 100]} //18.262]}
+    coordinates: [153.05009806754418, -27.211324843255202, 100]
+  }
+];
+
 const INITIAL_VIEW_STATE = {
   longitude: 144.94345786971536,
   latitude: -37.812765742471754,
@@ -94,7 +106,7 @@ export default function App({
   const [initialViewState, setInitialViewState] = useState(INITIAL_VIEW_STATE);
   const [boundBoxState, setBoundBoxState] = useState(BOUND_BOX);
 
-  const onTilesetLoad = (tileset) => {
+  const onTilesetLoad = tileset => {
     // Recenter view to cover the new tileset
     const {cartographicCenter, zoom} = tileset;
     setInitialViewState({
@@ -117,6 +129,7 @@ export default function App({
       points,
       gpsPoints,
       colorDomain,
+      groundPointData: GROUND_POINT_DATA,
       getBoundBox: boundBoxState,
       updateTriggers: {
         getBoundBox: boundBoxState
@@ -144,7 +157,7 @@ export default function App({
     })
   ];
 
-  const onClick = (info) => {
+  const onClick = info => {
     if (!drawBoundingBox || boundBoxState.widthPoint) {
       setBoundBoxState({BOUND_BOX});
       return;
@@ -195,7 +208,7 @@ export default function App({
     }
   };
 
-  const onViewStateChange = (event) => {
+  const onViewStateChange = event => {
     const viewState = event.viewState;
     const viewId = event.viewId;
 
@@ -207,10 +220,11 @@ export default function App({
     }
 
     if (viewId === 'main') {
-      setInitialViewState((currentViewStates) => ({
+      setInitialViewState(currentViewStates => ({
         main: {
           ...viewState,
-          target: null
+          target: null,
+          pitch: 0
         },
         minimap: {
           ...currentViewStates.minimap,
@@ -223,14 +237,15 @@ export default function App({
         }
       }));
     } else {
-      setInitialViewState((currentViewStates) => ({
+      setInitialViewState(currentViewStates => ({
         main: {
           ...currentViewStates.main,
           longitude: viewState.longitude,
           latitude: viewState.latitude,
           target: null,
           zoom: viewState.zoom,
-          bearing: viewState.bearing
+          bearing: viewState.bearing,
+          pitch: 0
         },
         minimap: {
           ...viewState,

@@ -1826,10 +1826,26 @@
   dependencies:
     "@loaders.gl/loader-utils" "2.3.0"
 
+"@loaders.gl/las@^2.3.5":
+  version "2.3.5"
+  resolved "https://registry.yarnpkg.com/@loaders.gl/las/-/las-2.3.5.tgz#f42961a67a41fcf9f4b496824bba3c60def8db21"
+  integrity sha512-tf9Jmk++ppfBiTK+upsctQgzLlMGUEoPmbFbEBBH47kOCuBKvpKVTYaGcUssBss0htcp8gVcRS2Ao6aCkGe24w==
+  dependencies:
+    "@babel/runtime" "^7.3.1"
+    "@loaders.gl/loader-utils" "2.3.5"
+
 "@loaders.gl/loader-utils@2.3.0", "@loaders.gl/loader-utils@^2.3.0":
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/@loaders.gl/loader-utils/-/loader-utils-2.3.0.tgz#2e40bacc7d5d6cc1a743d2c14cf64c952740167f"
   integrity sha512-zkVhXfm3ZW+i2goZPRXn4h3jhToLbwc1h+0X0S5wtj2xP22zvyg+3GeIkaWY/MArAzUw3oFnN4Pmm3R9MOPRcg==
+  dependencies:
+    "@babel/runtime" "^7.3.1"
+    "@probe.gl/stats" "^3.3.0"
+
+"@loaders.gl/loader-utils@2.3.5":
+  version "2.3.5"
+  resolved "https://registry.yarnpkg.com/@loaders.gl/loader-utils/-/loader-utils-2.3.5.tgz#d742ecd914a614233427240ca69a54bae0c29a66"
+  integrity sha512-zQv4dM+wHQy5l4zzfeYNrR67MTuhfTDR2a12ybe1GIX+DH5i3iYW1mubjx0dVuV4WaqJiXscL3FCVuWHYMbNSA==
   dependencies:
     "@babel/runtime" "^7.3.1"
     "@probe.gl/stats" "^3.3.0"

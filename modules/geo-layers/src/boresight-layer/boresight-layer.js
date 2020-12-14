@@ -9,14 +9,15 @@ import {Tiles3DLoader} from '@loaders.gl/3d-tiles';
 
 import TriangleLayer from './triangle-layer';
 import Roames3DLayer from '../roames-3d-layer/roames-3d-layer';
-import {PolygonLayer} from '@deck.gl/layers';
+import {PolygonLayer, RoamesIconLayer} from '@deck.gl/layers';
 
 import {colorRangeToFlatArray} from '../../../aggregation-layers/src/utils/color-utils';
 import {
   updateBounds,
   getTextureCoordinates,
   packVertices,
-  packVertices64
+  packVertices64,
+  packVertix64
 } from '../../../core/src/utils/bound-utils';
 
 const NULL_VALUE = -2147483648;
@@ -45,9 +46,10 @@ const defaultProps = {
   getBoundBox: {start: null, end: null, widthPoint: null, interEnd: null, interWidth: null},
   bounds: null,
   nullValue: NULL_VALUE,
-  onTilesetLoad: (tileset3d) => {},
-  onTileLoad: (tileHeader) => {},
-  onTileUnload: (tileHeader) => {},
+  groundPointData: null,
+  onTilesetLoad: tileset3d => {},
+  onTileLoad: tileHeader => {},
+  onTileUnload: tileHeader => {},
   onTileError: (tile, message, url) => {}
 };
 
@@ -200,7 +202,7 @@ export default class BoresightLayer extends CompositeLayer {
 
     // Get the updated textures for each layer
     const textures = [];
-    subLayers.map((r3dlayer) => {
+    subLayers.map(r3dlayer => {
       textures.push(r3dlayer.getTexture());
     });
 
@@ -265,11 +267,48 @@ export default class BoresightLayer extends CompositeLayer {
         wireframe: true,
         opacity: 0.1,
         getLineWidth: 1,
-        getPolygon: (d) => d.bounds,
+        getPolygon: d => d.bounds,
         getFillColor: [255, 0, 0]
       });
 
       subLayers.push(polyLayer);
+    }
+
+    if (this.props.groundPointData && textures[0]) {
+      const {groundStationCoordBuffer} = this.state;
+
+      const groundControlLayer = new RoamesIconLayer({
+        id: 'ground-control-layer',
+        data: this.props.groundPointData,
+        heightTexture: textures[0],
+        pickable: false,
+        iconAtlas:
+          'https://raw.githubusercontent.com/visgl/deck.gl-data/master/website/icon-atlas.png',
+        iconMapping: {
+          marker: {
+            x: 0,
+            y: 0,
+            width: 128,
+            height: 128,
+            mask: true
+          }
+        },
+        sizeScale: 5,
+        billboard: true,
+        colorTexture: this.state.colorTexture,
+        colorDomain: this.props.colorDomain,
+        getPosition: d => d.coordinates,
+        getIcon: d => 'marker',
+        getSize: d => 5,
+        getColor: d => [d.coordinates[2], 140, 140],
+        getTexCoords: groundStationCoordBuffer.getData(),
+        nullValue,
+        updateTriggers: {
+          getTexCoords: groundStationCoordBuffer.getData(),
+          heightTexture: textures[0]
+        }
+      });
+      subLayers.push(groundControlLayer);
     }
 
     return subLayers;
@@ -278,7 +317,12 @@ export default class BoresightLayer extends CompositeLayer {
 
   finalizeState() {
     super.finalizeState();
-    const {colorTexture, triPositionBuffer, triTexCoordBuffer} = this.state;
+    const {
+      colorTexture,
+      triPositionBuffer,
+      triTexCoordBuffer,
+      groundStationCoordBuffer
+    } = this.state;
     if (colorTexture) {
       colorTexture.delete();
     }
@@ -287,6 +331,9 @@ export default class BoresightLayer extends CompositeLayer {
     }
     if (triTexCoordBuffer) {
       triTexCoordBuffer.delete();
+    }
+    if (groundStationCoordBuffer) {
+      groundStationCoordBuffer.delete();
     }
   }
 
@@ -300,6 +347,10 @@ export default class BoresightLayer extends CompositeLayer {
       triTexCoordBuffer: new Buffer(gl, {
         byteLength: 48,
         accessor: {size: 2}
+      }),
+      groundStationCoordBuffer: new Buffer(gl, {
+        byteLength: 16,
+        accessor: {size: 2}
       })
     });
   }
@@ -309,6 +360,7 @@ export default class BoresightLayer extends CompositeLayer {
     const {
       triPositionBuffer,
       triTexCoordBuffer,
+      groundStationCoordBuffer,
       normalizedCommonBounds,
       viewportCorners
     } = this.state;
@@ -317,10 +369,20 @@ export default class BoresightLayer extends CompositeLayer {
 
     triPositionBuffer.subData(packVertices64(viewportCorners, 3));
 
-    const textureBounds = viewportCorners.map((p) =>
+    const textureBounds = viewportCorners.map(p =>
       getTextureCoordinates(viewport.projectPosition(p), normalizedCommonBounds)
     );
     triTexCoordBuffer.subData(packVertices(textureBounds, 2));
+
+    if (this.props.groundPointData) {
+      const p = [
+        this.props.groundPointData[0].coordinates[0],
+        this.props.groundPointData[0].coordinates[1]
+      ];
+      const webmercatorP = viewport.projectPosition(p);
+      const heightTexturePoint = getTextureCoordinates(webmercatorP, normalizedCommonBounds);
+      groundStationCoordBuffer.subData(packVertix64(heightTexturePoint, 2));
+    }
   }
 
   _updateColorTexture(opts) {

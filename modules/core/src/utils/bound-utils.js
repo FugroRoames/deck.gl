@@ -113,8 +113,8 @@ export function commonScreenToWorldBounds(commonBounds, viewport) {
 
 export function getBounds(points) {
   // Now build bounding box in world space (aligned to world coordiante system)
-  const x = points.map((p) => p[0]);
-  const y = points.map((p) => p[1]);
+  const x = points.map(p => p[0]);
+  const y = points.map(p => p[1]);
 
   const xMin = Math.min.apply(null, x);
   const xMax = Math.max.apply(null, x);
@@ -165,6 +165,20 @@ export function packVertices64(points, dimensions = 2) {
     index += 2 * dimensions;
   }
   return scratchArray64;
+}
+
+const scratchPointArray64 = new Float32Array(4);
+// For given rectangle bounds generates two triangles vertices that coverit completely
+export function packVertix64(point, dimensions = 2) {
+  const index = 0;
+  for (let i = 0; i < dimensions; i++) {
+    const value = point[i] || 0;
+    scratchPointArray64[index + i] = value;
+    scratchPointArray64[index + i + dimensions] = fp64LowPart(value);
+  }
+  // index += 2 * dimensions;
+
+  return scratchPointArray64;
 }
 
 // Expands boundingBox:[xMin, yMin, xMax, yMax] to match aspect ratio of given width and height

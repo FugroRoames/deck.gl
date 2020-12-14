@@ -1,11 +1,12 @@
 import GL from '@luma.gl/constants';
-import {Buffer, Transform, Texture2D, getParameters} from '@luma.gl/core';
+import {Transform, Texture2D, getParameters} from '@luma.gl/core';
 
 import {addMetersToLngLat} from '@math.gl/web-mercator';
 import {Ellipsoid} from '@math.gl/geospatial';
 import {COORDINATE_SYSTEM, CompositeLayer, WebMercatorViewport} from '@deck.gl/core';
 import {PolygonLayer, PointCloudLayer, RoamesPointCloudLayer} from '@deck.gl/layers';
 import {RoamesHeightLayer} from '@deck.gl/aggregation-layers';
+// import {RoamesHeightLayer} from "@deck.gl/geo-layers";
 
 import {log} from '@deck.gl/core';
 
@@ -19,14 +20,7 @@ import weights_vs from './weights-vs.glsl';
 import weights_fs from './weights-fs.glsl';
 // import TriangleLayer from './triangle-layer';
 
-import {colorRangeToFlatArray} from '../../../aggregation-layers/src/utils/color-utils';
-
-import {
-  updateBounds,
-  getTextureCoordinates,
-  packVertices,
-  packVertices64
-} from '../../../core/src/utils/bound-utils';
+import {updateBounds} from '../../../core/src/utils/bound-utils';
 
 import * as nodeUrl from 'url';
 
@@ -37,9 +31,9 @@ const defaultProps = {
   data: null,
   loadOptions: {},
   loader: Tiles3DLoader,
-  onTilesetLoad: (tileset3d) => {},
-  onTileLoad: (tileHeader) => {},
-  onTileUnload: (tileHeader) => {},
+  onTilesetLoad: tileset3d => {},
+  onTileLoad: tileHeader => {},
+  onTileUnload: tileHeader => {},
   onTileError: (tile, message, url) => {},
   xRotation: 0,
   yRotation: 0,
@@ -83,7 +77,7 @@ export default class Roames3DLayer extends CompositeLayer {
 
     this._createTexture();
     this._createTransform();
-    this._createBuffers();
+
     // setting initial transformation information
     const {
       xRotation,
@@ -146,14 +140,6 @@ export default class Roames3DLayer extends CompositeLayer {
       this._updateTileset(tileset3d);
       totalWeightsTransform.getFramebuffer().clear({color: [nullValue, 0.0, 0.0, 0.0]});
     }
-
-    if (props.colorRange !== oldProps.colorRange) {
-      this._updateColorTexture(opts);
-    }
-
-    if (changeFlags.viewportChanged) {
-      this._updateTextureRenderingBounds();
-    }
   }
 
   renderLayers() {
@@ -170,32 +156,6 @@ export default class Roames3DLayer extends CompositeLayer {
     const subLayers = [];
     subLayers.push(this._updateWeightmap());
 
-    // If you want to actually render the texture using this layer
-    // const {
-    //   triPositionBuffer,
-    //   triTexCoordBuffer
-    // } = this.state;
-
-    // subLayers.push(new TriangleLayer(
-    //     {
-    //       id: `triangle-layer-${this.id}`,
-    //       updateTriggers: this.props.updateTriggers
-    //     },
-    //     {
-    //       data: {
-    //         attributes: {
-    //           positions: triPositionBuffer,
-    //           texCoords: triTexCoordBuffer
-    //         }
-    //       },
-    //       vertexCount: 4,
-    //       colorTexture: this.state.colorTexture,
-    //       texture: this.state.totalWeightsTexture,
-    //       intensity: 1,
-    //       threshold: 0.05,
-    //     }
-    //   )
-    // );
     this.setState({lastUpdate: Date.now()});
     this.setState({zoom: this.context.viewport.zoom});
 
@@ -263,7 +223,7 @@ export default class Roames3DLayer extends CompositeLayer {
       return null;
     }
     const sublayers = tileset3d.tiles
-      .map((tile) => {
+      .map(tile => {
         const layers = [];
 
         if (boundingBox) {
@@ -429,39 +389,6 @@ export default class Roames3DLayer extends CompositeLayer {
     });
   }
 
-  _createBuffers() {
-    const {gl} = this.context;
-    this.setState({
-      triPositionBuffer: new Buffer(gl, {
-        byteLength: 96,
-        accessor: {size: 3}
-      }),
-      triTexCoordBuffer: new Buffer(gl, {
-        byteLength: 48,
-        accessor: {size: 2}
-      })
-    });
-  }
-
-  _updateTextureRenderingBounds() {
-    // Just render visible portion of the texture
-    const {
-      triPositionBuffer,
-      triTexCoordBuffer,
-      normalizedCommonBounds,
-      viewportCorners
-    } = this.state;
-
-    const {viewport} = this.context;
-
-    triPositionBuffer.subData(packVertices64(viewportCorners, 3));
-
-    const textureBounds = viewportCorners.map((p) =>
-      getTextureCoordinates(viewport.projectPosition(p), normalizedCommonBounds)
-    );
-    triTexCoordBuffer.subData(packVertices(textureBounds, 2));
-  }
-
   _createHeightTileLayer(tileHeader) {
     const {
       attributes,
@@ -587,13 +514,13 @@ export default class Roames3DLayer extends CompositeLayer {
       {
         id: `${this.id}-polygonlayer-${tileHeader.id}`,
         data,
-        getPolygon: (d) => d.polygon,
+        getPolygon: d => d.polygon,
         extruded: true,
         filled: false,
         stroked: true,
         wireframe: true,
         getElevation: z_shift,
-        getColor: (d) => [255, 0, 0, 255]
+        getColor: d => [255, 0, 0, 255]
       }
     );
   }
@@ -758,29 +685,6 @@ export default class Roames3DLayer extends CompositeLayer {
     return layer;
   }
   /* eslint-enable complexity, max-statements */
-
-  _updateColorTexture(opts) {
-    const {colorRange} = opts.props;
-    let {colorTexture} = this.state;
-
-    const colors = colorRangeToFlatArray(colorRange, true);
-
-    if (colorTexture) {
-      colorTexture.setImageData({
-        data: colors,
-        width: colorRange.length
-      });
-    } else {
-      colorTexture = new Texture2D(this.context.gl, {
-        data: colors,
-        width: colorRange.length,
-        height: 1,
-        format: GL.RGBA32F,
-        ...TEXTURE_OPTIONS
-      });
-    }
-    this.setState({colorTexture});
-  }
 }
 
 Roames3DLayer.layerName = 'Roames3DLayer';
