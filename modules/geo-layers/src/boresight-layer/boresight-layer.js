@@ -6,18 +6,19 @@ import {CompositeLayer} from '@deck.gl/core';
 import {log} from '@deck.gl/core';
 
 import {Tiles3DLoader} from '@loaders.gl/3d-tiles';
+import {GeoJSONLoader} from '@loaders.gl/json';
+import {load} from '@loaders.gl/core';
 
 import TriangleLayer from './triangle-layer';
 import Roames3DLayer from '../roames-3d-layer/roames-3d-layer';
-import {PolygonLayer, RoamesIconLayer} from '@deck.gl/layers';
+import {PolygonLayer} from '@deck.gl/layers';
 
 import {colorRangeToFlatArray} from '../../../aggregation-layers/src/utils/color-utils';
 import {
   updateBounds,
   getTextureCoordinates,
   packVertices,
-  packVertices64,
-  packVertix64
+  packVertices64
 } from '../../../core/src/utils/bound-utils';
 
 const NULL_VALUE = -2147483648;
@@ -40,16 +41,13 @@ const defaultProps = {
   data: null,
   loadOptions: {},
   loader: Tiles3DLoader,
-  boundingBox: false,
-  points: false,
-  gpsPoints: false,
   getBoundBox: {start: null, end: null, widthPoint: null, interEnd: null, interWidth: null},
-  bounds: null,
   nullValue: NULL_VALUE,
-  groundPointData: null,
-  onTilesetLoad: tileset3d => {},
-  onTileLoad: tileHeader => {},
-  onTileUnload: tileHeader => {},
+  groundPointUrl: null,
+  heightDiffTexture: true,
+  onTilesetLoad: (tileset3d) => {},
+  onTileLoad: (tileHeader) => {},
+  onTileUnload: (tileHeader) => {},
   onTileError: (tile, message, url) => {}
 };
 
@@ -66,6 +64,14 @@ const TEXTURE_OPTIONS = {
 
 const dummyArray = new Float64Array();
 
+async function fetchGCP(url) {
+  try {
+    return await load(url, GeoJSONLoader);
+  } catch (error) {
+    throw new Error(`An error occurred fetching Ground Control Points: ${error}`);
+  }
+}
+
 export default class BoresightLayer extends CompositeLayer {
   initializeState() {
     const {gl} = this.context;
@@ -77,23 +83,30 @@ export default class BoresightLayer extends CompositeLayer {
 
     this.setState({
       layerMap: {},
-      textureSize,
-      boundBox: this.props.getBoundBox,
-      bounds: this.props.bounds
+      textureSize
     });
     this._createBuffers();
+
+    const {groundPointUrl} = this.props;
+    if (groundPointUrl) {
+      const groundPointPromise = fetchGCP(groundPointUrl);
+      groundPointPromise.then((geojson) => {
+        this.setState({groundPointData: geojson.features, gcpLoaded: true});
+      });
+    }
   }
 
   shouldUpdateState({changeFlags}) {
     return changeFlags.somethingChanged;
   }
 
+  /* eslint-disable complexity, max-statements */
   updateState(opts) {
     const {props, oldProps} = opts;
 
     // update state everytime ..?
     const {viewport} = this.context;
-    const {worldBounds, textureSize, layerMap} = this.state;
+    const {worldBounds, textureSize} = this.state;
 
     // if (changeFlags.viewportChanged) {
     const newState = {};
@@ -106,35 +119,11 @@ export default class BoresightLayer extends CompositeLayer {
     }
 
     if (oldProps.data && props.data !== oldProps.data) {
-      for (const key in props.data) {
-        const rotation = props.data[key].rotation;
-        const oldRotation = oldProps.data[key].rotation;
-
-        if (this._rotationChanged(rotation, oldRotation)) {
-          layerMap[key].rotated = true;
-        } else {
-          layerMap[key].rotated = false;
-        }
-
-        const translation = props.data[key].translation;
-        const oldTranslation = oldProps.data[key].translation;
-        if (this._translationChanged(translation, oldTranslation)) {
-          layerMap[key].translated = true;
-        } else {
-          layerMap[key].translated = false;
-        }
-      }
-    }
-
-    if (
-      props.boundingBox !== oldProps.boundingBox ||
-      props.points !== oldProps.points ||
-      props.gpsPoints !== oldProps.gpsPoints
-    ) {
-      this.setState({subLayerToggled: true});
+      this._checkToggledChanges(oldProps, props);
     }
     this._updateTextureRenderingBounds();
   }
+  /* eslint-enable complexity, max-statements */
 
   getRandomInt(max) {
     return Math.floor(Math.random() * Math.floor(max));
@@ -142,27 +131,43 @@ export default class BoresightLayer extends CompositeLayer {
 
   /* eslint-disable complexity, max-statements */
   renderLayers() {
-    const {layerMap, bounds} = this.state;
-    const {data, boundingBox, points, gpsPoints, nullValue} = this.props;
-
+    const {layerMap, bounds, groundPointData, gcpLoaded} = this.state;
+    const {
+      data,
+      loader,
+      loadOptions,
+      colorRange,
+      nullValue,
+      heightDiffTexture,
+      colorDomain
+    } = this.props;
     const subLayers = [];
     // Calculate the texture for each tiles 3d dataset
     // call Roames3DLayer for each dataset
     for (const dataUrl in data) {
-      const transforms = data[dataUrl];
-      const rot = transforms.rotation;
-      const tran = transforms.translation;
+      const parameters = data[dataUrl];
+      const rot = parameters.rotation;
+      const tran = parameters.translation;
+      const boundingBox = parameters.boundingBox;
+      const points = parameters.points;
+      const gpsPoints = parameters.gpsPoints;
+      const groundControl = parameters.groundControl;
+      const displayTexture = parameters.displayTexture;
+
       let layer = layerMap[dataUrl] && layerMap[dataUrl].layer;
       if (!layer) {
         layer = new Roames3DLayer({
           id: `${this.id}-roames-3d-layer-${dataUrl}`,
           data: dataUrl,
-          loader: this.props.loader,
-          loadOptions: this.props.loadOptions,
-          colorRange: this.props.colorRange,
+          loader,
+          loadOptions,
+          colorRange,
+          colorDomain,
           boundingBox,
-          gpsPoints,
           points,
+          gpsPoints,
+          groundControl,
+          displayTexture,
           nullValue,
           onTilesetLoad: this.props.onTilesetLoad,
           xRotation: rot.xRotation,
@@ -177,15 +182,21 @@ export default class BoresightLayer extends CompositeLayer {
             this.getRandomInt(255),
             255
           ],
-          bounds
+          bounds,
+          groundPointData
         });
         layerMap[dataUrl] = {layer, dataURL: dataUrl, rotated: false, translated: false};
       } else if (layerMap[dataUrl].rotated) {
         layer.updateRotation(rot.xRotation, rot.yRotation, rot.zRotation);
       } else if (layerMap[dataUrl].translated) {
         layer.updateTranslation(tran.xTranslation, tran.yTranslation, tran.zTranslation);
-      } else if (this.state.subLayerToggled) {
-        layer.updateLayerToggle(boundingBox, points, gpsPoints);
+      } else if (layerMap[dataUrl].subLayerToggled) {
+        layer.updateLayerToggle(boundingBox, points, gpsPoints, groundControl);
+      } else if (gcpLoaded) {
+        layer.updateGroundPointData(groundPointData);
+        this.setState({gcpLoaded: false});
+      } else if (layerMap[dataUrl].displayTextureToggled) {
+        layer.updateDisplayTexture(displayTexture);
       }
 
       if (bounds) {
@@ -202,14 +213,14 @@ export default class BoresightLayer extends CompositeLayer {
 
     // Get the updated textures for each layer
     const textures = [];
-    subLayers.map(r3dlayer => {
+    subLayers.map((r3dlayer) => {
       textures.push(r3dlayer.getTexture());
     });
 
-    const {triPositionBuffer, triTexCoordBuffer} = this.state;
+    const {triPositionBuffer, triTexCoordBuffer, colorTexture} = this.state;
 
     // Send the textures to the Triangle layer which will diff the values (height) and render
-    if (textures) {
+    if (textures && heightDiffTexture) {
       subLayers.push(
         new TriangleLayer(
           {
@@ -227,23 +238,24 @@ export default class BoresightLayer extends CompositeLayer {
               }
             },
             vertexCount: 4,
-            colorTexture: this.state.colorTexture,
+            colorTexture,
             textureone: textures[0],
             texturetwo: textures[1],
-            colorDomain: this.props.colorDomain,
+            colorDomain,
             nullValue
           }
         )
       );
     }
 
+    const {getBoundBox} = this.props;
     // Create bounds for DH layer
-    if (this.props.getBoundBox.interEnd || this.props.getBoundBox.end) {
-      const start = this.props.getBoundBox.start;
-      const end = this.props.getBoundBox.end;
-      const widthPoint = this.props.getBoundBox.widthPoint;
-      const interEnd = this.props.getBoundBox.interEnd;
-      const interWidth = this.props.getBoundBox.interWidth;
+    if (getBoundBox.interEnd || getBoundBox.end) {
+      const start = getBoundBox.start;
+      const end = getBoundBox.end;
+      const widthPoint = getBoundBox.widthPoint;
+      const interEnd = getBoundBox.interEnd;
+      const interWidth = getBoundBox.interWidth;
 
       let wPoint = interWidth || [0, 0, 0];
       let to = interEnd;
@@ -267,48 +279,11 @@ export default class BoresightLayer extends CompositeLayer {
         wireframe: true,
         opacity: 0.1,
         getLineWidth: 1,
-        getPolygon: d => d.bounds,
+        getPolygon: (d) => d.bounds,
         getFillColor: [255, 0, 0]
       });
 
       subLayers.push(polyLayer);
-    }
-
-    if (this.props.groundPointData && textures[0]) {
-      const {groundStationCoordBuffer} = this.state;
-
-      const groundControlLayer = new RoamesIconLayer({
-        id: 'ground-control-layer',
-        data: this.props.groundPointData,
-        heightTexture: textures[0],
-        pickable: false,
-        iconAtlas:
-          'https://raw.githubusercontent.com/visgl/deck.gl-data/master/website/icon-atlas.png',
-        iconMapping: {
-          marker: {
-            x: 0,
-            y: 0,
-            width: 128,
-            height: 128,
-            mask: true
-          }
-        },
-        sizeScale: 5,
-        billboard: true,
-        colorTexture: this.state.colorTexture,
-        colorDomain: this.props.colorDomain,
-        getPosition: d => d.coordinates,
-        getIcon: d => 'marker',
-        getSize: d => 5,
-        getColor: d => [d.coordinates[2], 140, 140],
-        getTexCoords: groundStationCoordBuffer.getData(),
-        nullValue,
-        updateTriggers: {
-          getTexCoords: groundStationCoordBuffer.getData(),
-          heightTexture: textures[0]
-        }
-      });
-      subLayers.push(groundControlLayer);
     }
 
     return subLayers;
@@ -317,12 +292,7 @@ export default class BoresightLayer extends CompositeLayer {
 
   finalizeState() {
     super.finalizeState();
-    const {
-      colorTexture,
-      triPositionBuffer,
-      triTexCoordBuffer,
-      groundStationCoordBuffer
-    } = this.state;
+    const {colorTexture, triPositionBuffer, triTexCoordBuffer} = this.state;
     if (colorTexture) {
       colorTexture.delete();
     }
@@ -331,9 +301,6 @@ export default class BoresightLayer extends CompositeLayer {
     }
     if (triTexCoordBuffer) {
       triTexCoordBuffer.delete();
-    }
-    if (groundStationCoordBuffer) {
-      groundStationCoordBuffer.delete();
     }
   }
 
@@ -347,10 +314,6 @@ export default class BoresightLayer extends CompositeLayer {
       triTexCoordBuffer: new Buffer(gl, {
         byteLength: 48,
         accessor: {size: 2}
-      }),
-      groundStationCoordBuffer: new Buffer(gl, {
-        byteLength: 16,
-        accessor: {size: 2}
       })
     });
   }
@@ -360,7 +323,6 @@ export default class BoresightLayer extends CompositeLayer {
     const {
       triPositionBuffer,
       triTexCoordBuffer,
-      groundStationCoordBuffer,
       normalizedCommonBounds,
       viewportCorners
     } = this.state;
@@ -369,20 +331,10 @@ export default class BoresightLayer extends CompositeLayer {
 
     triPositionBuffer.subData(packVertices64(viewportCorners, 3));
 
-    const textureBounds = viewportCorners.map(p =>
+    const textureBounds = viewportCorners.map((p) =>
       getTextureCoordinates(viewport.projectPosition(p), normalizedCommonBounds)
     );
     triTexCoordBuffer.subData(packVertices(textureBounds, 2));
-
-    if (this.props.groundPointData) {
-      const p = [
-        this.props.groundPointData[0].coordinates[0],
-        this.props.groundPointData[0].coordinates[1]
-      ];
-      const webmercatorP = viewport.projectPosition(p);
-      const heightTexturePoint = getTextureCoordinates(webmercatorP, normalizedCommonBounds);
-      groundStationCoordBuffer.subData(packVertix64(heightTexturePoint, 2));
-    }
   }
 
   _updateColorTexture(opts) {
@@ -406,6 +358,62 @@ export default class BoresightLayer extends CompositeLayer {
     }
     this.setState({colorTexture});
   }
+
+  /* eslint-disable complexity, max-statements */
+  _checkToggledChanges(oldProps, props) {
+    const {layerMap} = this.state;
+    for (const key in props.data) {
+      if (key in layerMap) {
+        const rotation = props.data[key].rotation;
+        const oldRotation = oldProps.data[key].rotation;
+
+        if (this._rotationChanged(rotation, oldRotation)) {
+          layerMap[key].rotated = true;
+        } else {
+          layerMap[key].rotated = false;
+        }
+
+        const translation = props.data[key].translation;
+        const oldTranslation = oldProps.data[key].translation;
+        if (this._translationChanged(translation, oldTranslation)) {
+          layerMap[key].translated = true;
+        } else {
+          layerMap[key].translated = false;
+        }
+
+        // Check if any of the input props have been toggled
+        const boundingbox = props.data[key].boundingBox;
+        const oldBoundingbox = oldProps.data[key].boundingBox;
+        const points = props.data[key].points;
+        const oldPoints = oldProps.data[key].points;
+        const gpsPoints = props.data[key].gpsPoints;
+        const oldGpsPoints = oldProps.data[key].gpsPoints;
+        const groundControl = props.data[key].groundControl;
+        const oldGroundControl = oldProps.data[key].groundControl;
+
+        if (
+          boundingbox !== oldBoundingbox ||
+          points !== oldPoints ||
+          gpsPoints !== oldGpsPoints ||
+          groundControl !== oldGroundControl
+        ) {
+          layerMap[key].subLayerToggled = true;
+        } else {
+          layerMap[key].subLayerToggled = false;
+        }
+        // Check if the texture should be displayed
+        const displayTexture = props.data[key].displayTexture;
+        const oldDisplayTexture = oldProps.data[key].displayTexture;
+
+        if (displayTexture !== oldDisplayTexture) {
+          layerMap[key].displayTextureToggled = true;
+        } else {
+          layerMap[key].displayTextureToggled = false;
+        }
+      }
+    }
+  }
+  /* eslint-enable complexity, max-statements */
 
   _rotationChanged(rot1, rot2) {
     if (

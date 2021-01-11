@@ -33,21 +33,20 @@ attribute vec4 instanceIconFrames;
 attribute float instanceColorModes;
 attribute vec2 instanceOffsets;
 attribute vec2 instancePixelOffset;
-attribute vec2 texCoords;
-attribute vec2 texCoords64Low;
 
 uniform float sizeScale;
 uniform vec2 iconsTextureDim;
 uniform float sizeMinPixels;
 uniform float sizeMaxPixels;
 uniform bool billboard;
+uniform vec4 commonBounds;
 
 varying float vColorMode;
 varying vec4 vColor;
 varying vec2 vTextureCoords;
 varying vec2 uv;
 varying float iconHeight;
-varying vec2 vTexCoords;
+varying vec2 vHeightTexCoords;
 
 vec2 rotate_by_angle(vec2 vertex, float angle) {
   float angle_radian = angle * PI / 180.0;
@@ -63,7 +62,7 @@ void main(void) {
   geometry.pickingColor = instancePickingColors;
   uv = positions;
   iconHeight = instancePositions[2];
-
+  vec3 instanceP = vec3(instancePositions.xy, 1.);
   vec2 iconSize = instanceIconFrames.zw;
   // convert size in meters to pixels, then scaled and clamp
  
@@ -83,7 +82,7 @@ void main(void) {
   pixelOffset.y *= -1.0;
 
   if (billboard)  {
-    gl_Position = project_position_to_clipspace(instancePositions, instancePositions64Low, vec3(0.0), geometry.position);
+    gl_Position = project_position_to_clipspace(instanceP, instancePositions64Low, vec3(0.0), geometry.position);
     vec3 offset = vec3(pixelOffset, 0.0);
     DECKGL_FILTER_SIZE(offset, geometry);
     gl_Position.xy += project_pixel_size_to_clipspace(offset.xy);
@@ -91,17 +90,18 @@ void main(void) {
   } else {
     vec3 offset_common = vec3(project_pixel_size(pixelOffset), 0.0);
     DECKGL_FILTER_SIZE(offset_common, geometry);
-    gl_Position = project_position_to_clipspace(instancePositions, instancePositions64Low, offset_common, geometry.position); 
+    gl_Position = project_position_to_clipspace(instanceP, instancePositions64Low, offset_common, geometry.position); 
   }
   DECKGL_FILTER_GL_POSITION(gl_Position, geometry);
+
+  vec3 commonPosition = project_position(instancePositions, instancePositions64Low);
+  vHeightTexCoords = (commonPosition.xy - commonBounds.xy) / (commonBounds.zw - commonBounds.xy);
 
   vTextureCoords = mix(
     instanceIconFrames.xy,
     instanceIconFrames.xy + iconSize,
     (positions.xy + 1.0) / 2.0
   ) / iconsTextureDim;
-
-  vTexCoords = texCoords;
 
   vColor = instanceColors;
   DECKGL_FILTER_COLOR(vColor, geometry);

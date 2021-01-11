@@ -19,17 +19,26 @@ const FLIGHT_TWO_URL =
 // const FLIGHT_FOUR_URL =
 // 'https://d2p2h9bgfn7gmq.cloudfront.net/20072099-20201020150357/final/0040000_1/tileset.json';
 
-const GROUND_POINT_DATA = [
-  {
-    name: 'Garozzo St',
-    code: 'BE',
-    address: 'Garozzo Street Bondall 4034',
-    entries: '6719',
-    exits: '16917',
-    // "coordinates":[153.05002661339216,-27.211739662565794, 100]} //18.262]}
-    coordinates: [153.05009806754418, -27.211324843255202, 100]
+const GROUND_POINT_URL = null;
+
+function renderTooltip(info) {
+  const {object, x, y} = info;
+  if (!object) {
+    return null;
   }
-];
+
+  if (!('geometry' in object)) {
+    return null;
+  }
+
+  return (
+    <div className="tooltip interactive" style={{left: x, top: y}}>
+      <div>Longitude: {object.geometry.coordinates[0]}</div>
+      <div>Latitude: {object.geometry.coordinates[1]}</div>
+      <div>Height: {object.geometry.coordinates[2]}</div>
+    </div>
+  );
+}
 
 const INITIAL_VIEW_STATE = {
   longitude: 144.94345786971536,
@@ -51,27 +60,22 @@ const BOUND_BOX = {
 
 export default function App({
   mapStyle = 'mapbox://styles/mapbox/light-v9',
-  x = null,
-  y = null,
-  z = null,
-  xT = null,
-  yT = null,
-  zT = null,
-  boundingBox = false,
-  points = false,
-  gpsPoints = false,
   data = {
     [FLIGHT_ONE_URL]: {
       rotation: {
-        xRotation: x,
-        yRotation: y,
-        zRotation: z
+        xRotation: 0,
+        yRotation: 0,
+        zRotation: 0
       },
       translation: {
-        xTranslation: xT,
-        yTranslation: yT,
-        zTranslation: zT
-      }
+        xTranslation: 0,
+        yTranslation: 0,
+        zTranslation: 0
+      },
+      boundingBox: false,
+      points: false,
+      gpsPoints: false,
+      groundControl: false
     },
     [FLIGHT_TWO_URL]: {
       rotation: {
@@ -83,7 +87,11 @@ export default function App({
         xTranslation: 0,
         yTranslation: 0,
         zTranslation: 0
-      }
+      },
+      boundingBox: false,
+      points: false,
+      gpsPoints: false,
+      groundControl: false
     }
   },
   loader = Tiles3DLoader,
@@ -100,13 +108,15 @@ export default function App({
     [0, 0, 200]
   ],
   colorDomain = [-1, 1],
-  drawBoundingBox
+  drawBoundingBox = false,
+  heightDiffTexture = true
 }) {
   registerLoaders(loader);
   const [initialViewState, setInitialViewState] = useState(INITIAL_VIEW_STATE);
   const [boundBoxState, setBoundBoxState] = useState(BOUND_BOX);
+  const [clickInfo, setClickInfo] = useState({});
 
-  const onTilesetLoad = tileset => {
+  const onTilesetLoad = (tileset) => {
     // Recenter view to cover the new tileset
     const {cartographicCenter, zoom} = tileset;
     setInitialViewState({
@@ -120,17 +130,16 @@ export default function App({
 
   const layers = [
     new BoresightLayer({
-      id: 'melb-boresight-layer',
+      id: 'boresight-layer',
       data,
       loader,
       loadOptions,
+      onClick: !clickInfo.objects && setClickInfo,
       colorRange,
-      boundingBox,
-      points,
-      gpsPoints,
       colorDomain,
-      groundPointData: GROUND_POINT_DATA,
+      groundPointUrl: GROUND_POINT_URL,
       getBoundBox: boundBoxState,
+      heightDiffTexture,
       updateTriggers: {
         getBoundBox: boundBoxState
       },
@@ -140,7 +149,7 @@ export default function App({
   const views = [
     new MapView({
       id: 'main',
-      height: '50%',
+      height: '80%',
       controller: MapBoundController,
       drawBoundingBox,
       orthographic: true,
@@ -149,15 +158,15 @@ export default function App({
     new MapView({
       id: 'minimap',
       x: 0,
-      y: '50%',
-      height: '50%',
+      y: '80%',
+      height: '20%',
       width: '100%',
       controller: HorizontalOrthoController,
       orthographic: true
     })
   ];
 
-  const onClick = info => {
+  const onClick = (info) => {
     if (!drawBoundingBox || boundBoxState.widthPoint) {
       setBoundBoxState({BOUND_BOX});
       return;
@@ -208,7 +217,12 @@ export default function App({
     }
   };
 
-  const onViewStateChange = event => {
+  const hideTooltip = () => {
+    setClickInfo({});
+  };
+
+  const onViewStateChange = (event) => {
+    hideTooltip();
     const viewState = event.viewState;
     const viewId = event.viewId;
 
@@ -220,7 +234,7 @@ export default function App({
     }
 
     if (viewId === 'main') {
-      setInitialViewState(currentViewStates => ({
+      setInitialViewState((currentViewStates) => ({
         main: {
           ...viewState,
           target: null,
@@ -237,7 +251,7 @@ export default function App({
         }
       }));
     } else {
-      setInitialViewState(currentViewStates => ({
+      setInitialViewState((currentViewStates) => ({
         main: {
           ...currentViewStates.main,
           longitude: viewState.longitude,
@@ -292,6 +306,7 @@ export default function App({
           preventStyleDiffing={true}
         />
       </View>
+      {renderTooltip(clickInfo)}
     </DeckGL>
   );
 }

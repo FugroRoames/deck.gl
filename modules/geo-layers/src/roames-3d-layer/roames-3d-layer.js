@@ -1,12 +1,16 @@
 import GL from '@luma.gl/constants';
-import {Transform, Texture2D, getParameters} from '@luma.gl/core';
+import {Buffer, Transform, Texture2D, getParameters} from '@luma.gl/core';
 
 import {addMetersToLngLat} from '@math.gl/web-mercator';
 import {Ellipsoid} from '@math.gl/geospatial';
 import {COORDINATE_SYSTEM, CompositeLayer, WebMercatorViewport} from '@deck.gl/core';
-import {PolygonLayer, PointCloudLayer, RoamesPointCloudLayer} from '@deck.gl/layers';
+import {
+  PolygonLayer,
+  PointCloudLayer,
+  RoamesPointCloudLayer,
+  RoamesIconLayer
+} from '@deck.gl/layers';
 import {RoamesHeightLayer} from '@deck.gl/aggregation-layers';
-// import {RoamesHeightLayer} from "@deck.gl/geo-layers";
 
 import {log} from '@deck.gl/core';
 
@@ -18,9 +22,15 @@ import {Tiles3DLoader, Tile3DFeatureTable} from '@loaders.gl/3d-tiles';
 
 import weights_vs from './weights-vs.glsl';
 import weights_fs from './weights-fs.glsl';
-// import TriangleLayer from './triangle-layer';
+import DebugTriangleLayer from './debug-triangle-layer';
 
-import {updateBounds} from '../../../core/src/utils/bound-utils';
+import {
+  updateBounds,
+  getTextureCoordinates,
+  packVertices,
+  packVertices64
+} from '../../../core/src/utils/bound-utils';
+import {colorRangeToFlatArray} from '../../../aggregation-layers/src/utils/color-utils';
 
 import * as nodeUrl from 'url';
 
@@ -31,9 +41,9 @@ const defaultProps = {
   data: null,
   loadOptions: {},
   loader: Tiles3DLoader,
-  onTilesetLoad: tileset3d => {},
-  onTileLoad: tileHeader => {},
-  onTileUnload: tileHeader => {},
+  onTilesetLoad: (tileset3d) => {},
+  onTileLoad: (tileHeader) => {},
+  onTileUnload: (tileHeader) => {},
   onTileError: (tile, message, url) => {},
   xRotation: 0,
   yRotation: 0,
@@ -45,7 +55,10 @@ const defaultProps = {
   boundingBox: false,
   points: false,
   gpsPoints: false,
-  bounds: null
+  groundControl: false,
+  displayTexture: false,
+  bounds: null,
+  groundPointData: null
 };
 
 const TEXTURE_OPTIONS = {
@@ -59,8 +72,20 @@ const TEXTURE_OPTIONS = {
   dataFormat: GL.RED
 };
 
+const COL_TEXTURE_OPTIONS = {
+  mipmaps: false,
+  parameters: {
+    [GL.TEXTURE_MAG_FILTER]: GL.NEAREST,
+    [GL.TEXTURE_MIN_FILTER]: GL.NEAREST,
+    [GL.TEXTURE_WRAP_S]: GL.CLAMP_TO_EDGE,
+    [GL.TEXTURE_WRAP_T]: GL.CLAMP_TO_EDGE
+  },
+  dataFormat: GL.RGBA
+};
+
 const SIZE_2K = 2048;
 const RESOLUTION = 2; // (number of common space pixels) / (number texels)
+const dummyArray = new Float64Array();
 
 export default class Roames3DLayer extends CompositeLayer {
   initializeState() {
@@ -77,6 +102,7 @@ export default class Roames3DLayer extends CompositeLayer {
 
     this._createTexture();
     this._createTransform();
+    this._createBuffers();
 
     // setting initial transformation information
     const {
@@ -90,7 +116,10 @@ export default class Roames3DLayer extends CompositeLayer {
       boundingBox,
       points,
       gpsPoints,
-      bounds
+      groundControl,
+      bounds,
+      groundPointData,
+      displayTexture
     } = this.props;
 
     this.setState({
@@ -104,7 +133,10 @@ export default class Roames3DLayer extends CompositeLayer {
       boundingBox,
       points,
       gpsPoints,
-      bounds
+      groundControl,
+      bounds,
+      groundPointData,
+      displayTexture
     });
   }
 
@@ -115,7 +147,17 @@ export default class Roames3DLayer extends CompositeLayer {
   updateState(opts) {
     const {props, oldProps} = opts;
     const {viewport} = this.context;
-    const {worldBounds, textureSize, tileset3d, totalWeightsTransform} = this.state;
+    const {
+      worldBounds,
+      textureSize,
+      tileset3d,
+      totalWeightsTransform,
+      zoom,
+      rotationChanged,
+      translationChanged,
+      displayTexture,
+      displayTextureChanged
+    } = this.state;
     const changeFlags = this._getChangeFlags(opts);
     const {nullValue} = props;
 
@@ -125,8 +167,10 @@ export default class Roames3DLayer extends CompositeLayer {
 
     if (
       changeFlags.viewportChanged ||
-      this.state.rotationChanged ||
-      this.state.translationChanged
+      rotationChanged ||
+      translationChanged ||
+      viewport.zoom !== zoom ||
+      displayTextureChanged
     ) {
       const newState = {};
       changeFlags.boundsChanged = updateBounds(
@@ -140,24 +184,56 @@ export default class Roames3DLayer extends CompositeLayer {
       this._updateTileset(tileset3d);
       totalWeightsTransform.getFramebuffer().clear({color: [nullValue, 0.0, 0.0, 0.0]});
     }
+    if (props.colorRange !== oldProps.colorRange) {
+      this._updateColorTexture(opts);
+    }
+
+    // For rendering the texture
+    if (displayTexture) {
+      if (changeFlags.viewportChanged) {
+        this._updateTextureRenderingBounds();
+      }
+    }
   }
 
   renderLayers() {
-    const {tileset3d} = this.state;
+    const {tileset3d, displayTexture, heightRange} = this.state;
+    const {viewport} = this.context;
     if (!tileset3d) {
       return null;
-    }
-
-    const {nullValue} = this.props;
-    if (this.context.viewport.zoom !== this.state.zoom) {
-      this.state.totalWeightsTransform.getFramebuffer().clear({color: [nullValue, 0.0, 0.0, 0.0]});
     }
 
     const subLayers = [];
     subLayers.push(this._updateWeightmap());
 
-    this.setState({lastUpdate: Date.now()});
-    this.setState({zoom: this.context.viewport.zoom});
+    // If you want to actually render the single texture using this layer
+    if (displayTexture) {
+      const {totalWeightsTexture, colorTexture, triPositionBuffer, triTexCoordBuffer} = this.state;
+      subLayers.push(
+        new DebugTriangleLayer(
+          {
+            id: `debug-triangle-layer-${this.id}`
+          },
+          {
+            data: {
+              attributes: {
+                positions: {
+                  buffer: triPositionBuffer,
+                  value: dummyArray
+                },
+                texCoords: triTexCoordBuffer
+              }
+            },
+            vertexCount: 4,
+            colorTexture,
+            texture: totalWeightsTexture,
+            colorDomain: heightRange
+          }
+        )
+      );
+    }
+
+    this.setState({lastUpdate: Date.now(), zoom: viewport.zoom});
 
     return subLayers;
   }
@@ -187,15 +263,32 @@ export default class Roames3DLayer extends CompositeLayer {
     }
   }
 
-  updateLayerToggle(boundingBox, points, gpsPoints) {
+  updateLayerToggle(boundingBox, points, gpsPoints, groundControl) {
     if (this.state) {
-      this.setState({boundingBox, points, gpsPoints});
+      this.setState({boundingBox, points, gpsPoints, groundControl});
+    }
+  }
+
+  updateGroundPointData(groundPointData) {
+    if (this.state) {
+      this.setState({groundPointData});
+    }
+  }
+
+  updateDisplayTexture(displayTexture) {
+    if (this.state) {
+      this.setState({displayTexture, displayTextureChanged: true});
     }
   }
 
   finalizeState() {
     super.finalizeState();
-    const {totalWeightsTexture, totalWeightsTransform} = this.state;
+    const {
+      totalWeightsTexture,
+      totalWeightsTransform,
+      triPositionBuffer,
+      triTexCoordBuffer
+    } = this.state;
     if (totalWeightsTexture) {
       totalWeightsTexture.delete();
     }
@@ -203,6 +296,70 @@ export default class Roames3DLayer extends CompositeLayer {
     if (totalWeightsTransform) {
       totalWeightsTransform.delete();
     }
+
+    if (triPositionBuffer) {
+      triPositionBuffer.delete();
+    }
+
+    if (triTexCoordBuffer) {
+      triTexCoordBuffer.delete();
+    }
+  }
+
+  _updateColorTexture(opts) {
+    const {colorRange} = opts.props;
+    let {colorTexture} = this.state;
+
+    const colors = colorRangeToFlatArray(colorRange, false, Uint8Array);
+
+    if (colorTexture) {
+      colorTexture.setImageData({
+        data: colors,
+        width: colorRange.length
+      });
+    } else {
+      colorTexture = new Texture2D(this.context.gl, {
+        data: colors,
+        width: colorRange.length,
+        height: 1,
+        format: GL.RGBA,
+        ...COL_TEXTURE_OPTIONS
+      });
+    }
+    this.setState({colorTexture});
+  }
+
+  _createBuffers() {
+    const {gl} = this.context;
+    this.setState({
+      triPositionBuffer: new Buffer(gl, {
+        byteLength: 96,
+        accessor: {size: 3}
+      }),
+      triTexCoordBuffer: new Buffer(gl, {
+        byteLength: 48,
+        accessor: {size: 2}
+      })
+    });
+  }
+
+  _updateTextureRenderingBounds() {
+    // Just render visible portion of the texture
+    const {
+      triPositionBuffer,
+      triTexCoordBuffer,
+      normalizedCommonBounds,
+      viewportCorners
+    } = this.state;
+
+    const {viewport} = this.context;
+
+    triPositionBuffer.subData(packVertices64(viewportCorners, 3));
+
+    const textureBounds = viewportCorners.map((p) =>
+      getTextureCoordinates(viewport.projectPosition(p), normalizedCommonBounds)
+    );
+    triTexCoordBuffer.subData(packVertices(textureBounds, 2));
   }
 
   _getChangeFlags(opts) {
@@ -216,44 +373,71 @@ export default class Roames3DLayer extends CompositeLayer {
     return changeFlags;
   }
 
+  _hideSubLayer(tile, type) {
+    const {layerMap} = this.state;
+    const layer = layerMap[`${tile.id}-${type}`] && layerMap[`${tile.id}-${type}`].layer;
+    if (layer && layer.props && layer.props.visible) {
+      const newLayer = layer.clone({visible: false});
+      layerMap[`${tile.id}-${type}`].layer = newLayer;
+    }
+  }
+
   _updateWeightmap() {
-    const {tileset3d, layerMap} = this.state;
-    const {points, gpsPoints, boundingBox, height} = this.state;
+    const {tileset3d, layerMap, points, gpsPoints, boundingBox, height, groundControl} = this.state;
     if (!tileset3d) {
       return null;
     }
     const sublayers = tileset3d.tiles
-      .map(tile => {
+      .map((tile) => {
         const layers = [];
 
         if (boundingBox) {
           const boundlayer = layerMap[`${tile.id}-bound`] && layerMap[`${tile.id}-bound`].layer;
           const layer = this._createLayer(tile, boundlayer, layerMap, 'bound');
           layers.push(layer);
+        } else {
+          this._hideSubLayer(tile, 'bound');
         }
 
         if (gpsPoints) {
           const gpslayer = layerMap[`${tile.id}-gps`] && layerMap[`${tile.id}-gps`].layer;
           const layer = this._createLayer(tile, gpslayer, layerMap, 'gps');
           layers.push(layer);
+        } else {
+          this._hideSubLayer(tile, 'gps');
         }
 
         if (points) {
           const pointLayer = layerMap[`${tile.id}-points`] && layerMap[`${tile.id}-points`].layer;
           const layer = this._createLayer(tile, pointLayer, layerMap, 'points');
           layers.push(layer);
+        } else {
+          this._hideSubLayer(tile, 'points');
         }
 
         if (height) {
-          const heightLayer = layerMap[tile.id] && layerMap[tile.id].layer;
+          const heightLayer = layerMap[`${tile.id}-height`] && layerMap[`${tile.id}-height`].layer;
           const layer = this._createLayer(tile, heightLayer, layerMap, 'height');
           layers.push(layer);
+        } else {
+          this._hideSubLayer(tile, 'height');
         }
 
         return layers;
       })
       .filter(Boolean);
-    this.setState({rotationChanged: false, translationChanged: false});
+    this.setState({
+      rotationChanged: false,
+      translationChanged: false,
+      displayTextureChanged: false
+    });
+
+    if (groundControl) {
+      const layer = this._createGroundControlLayer();
+      if (layer) {
+        sublayers.push(layer);
+      }
+    }
 
     return sublayers;
   }
@@ -280,13 +464,35 @@ export default class Roames3DLayer extends CompositeLayer {
       tileset3d._queryParamsString = `&${url.query}`;
     }
 
+    // Get the tileset height range for coloring range
+    const heightRange = this._getHeightRange(tileset3d);
     this.setState({
       tileset3d,
-      layerMap: {}
+      layerMap: {},
+      heightRange
     });
 
     this._updateTileset(tileset3d);
     this.props.onTilesetLoad(tileset3d);
+  }
+
+  _getHeightRange(tileHeader) {
+    const boundingVolumeCenter = tileHeader.cartesianCenter;
+    const cartCenter = [0, 0, 0];
+    cartCenter[0] = boundingVolumeCenter[0] + tileHeader.tileset.root.boundingVolume.box[3];
+    cartCenter[1] = boundingVolumeCenter[1] + tileHeader.tileset.root.boundingVolume.box[4];
+    cartCenter[2] = boundingVolumeCenter[2] + tileHeader.tileset.root.boundingVolume.box[5];
+
+    cartCenter[0] += tileHeader.tileset.root.boundingVolume.box[6];
+    cartCenter[1] += tileHeader.tileset.root.boundingVolume.box[7];
+    cartCenter[2] += tileHeader.tileset.root.boundingVolume.box[8];
+
+    cartCenter[0] += tileHeader.tileset.root.boundingVolume.box[9];
+    cartCenter[1] += tileHeader.tileset.root.boundingVolume.box[10];
+    cartCenter[2] += tileHeader.tileset.root.boundingVolume.box[11];
+    const result = [];
+    const longlatheight = Ellipsoid.WGS84.cartesianToCartographic(cartCenter, result);
+    return [tileHeader.cartographicCenter[2], longlatheight[2]];
   }
 
   _onTileLoad(tileHeader) {
@@ -404,13 +610,21 @@ export default class Roames3DLayer extends CompositeLayer {
     }
 
     const {getPointColor} = this.props;
-    const {xRotation, yRotation, zRotation, xTranslation, yTranslation, zTranslation} = this.state;
+    const {
+      totalWeightsTransform,
+      xRotation,
+      yRotation,
+      zRotation,
+      xTranslation,
+      yTranslation,
+      zTranslation
+    } = this.state;
     const SubLayerClass = this.getSubLayerClass('roamesheight', RoamesHeightLayer);
 
     return new SubLayerClass(
       this.getSubLayerProps({
         id: 'roamesheight',
-        totalWeightsTransform: this.state.totalWeightsTransform
+        totalWeightsTransform
       }),
       {
         id: `${this.id}-height-${tileHeader.id}`,
@@ -436,6 +650,46 @@ export default class Roames3DLayer extends CompositeLayer {
         getColor: constantRGBA || getPointColor
       }
     );
+  }
+
+  _createGroundControlLayer() {
+    const {groundPointData, groundControl, totalWeightsTexture, colorTexture} = this.state;
+    const {nullValue, colorDomain} = this.props;
+
+    if (!groundControl || !groundPointData || !totalWeightsTexture || !colorTexture) {
+      return null;
+    }
+
+    const SubLayerClass = this.getSubLayerClass('roamesicon', RoamesIconLayer);
+
+    return new SubLayerClass({
+      id: `${this.id}-roames-ground-control`,
+      data: groundPointData,
+      heightTexture: totalWeightsTexture,
+      pickable: true,
+      iconAtlas:
+        'https://raw.githubusercontent.com/visgl/deck.gl-data/master/website/icon-atlas.png',
+      iconMapping: {
+        marker: {
+          x: 128,
+          y: 0,
+          width: 128,
+          height: 128,
+          mask: true
+        }
+      },
+      sizeScale: 10,
+      billboard: true,
+      colorTexture,
+      colorDomain,
+      getPosition: (d) => d.geometry.coordinates,
+      getIcon: (d) => 'marker',
+      getSize: (d) => 5,
+      nullValue,
+      updateTriggers: {
+        heightTexture: totalWeightsTexture
+      }
+    });
   }
 
   _createPointCloudTileLayer(tileHeader) {
@@ -514,13 +768,13 @@ export default class Roames3DLayer extends CompositeLayer {
       {
         id: `${this.id}-polygonlayer-${tileHeader.id}`,
         data,
-        getPolygon: d => d.polygon,
+        getPolygon: (d) => d.polygon,
         extruded: true,
         filled: false,
         stroked: true,
         wireframe: true,
         getElevation: z_shift,
-        getColor: d => [255, 0, 0, 255]
+        getColor: (d) => [255, 0, 0, 255]
       }
     );
   }
@@ -609,6 +863,7 @@ export default class Roames3DLayer extends CompositeLayer {
           layer = this._createGPSLayer(tile);
           layerMap[`${tile.id}-gps`] = {layer, tile};
         }
+
         if (type === 'points') {
           layer = this._createPointCloudTileLayer(tile);
           layerMap[`${tile.id}-points`] = {layer, tile};
@@ -616,25 +871,34 @@ export default class Roames3DLayer extends CompositeLayer {
 
         if (type === 'height') {
           layer = this._createHeightTileLayer(tile);
-          layerMap[tile.id] = {layer, tile};
+          layerMap[`${tile.id}-height`] = {layer, tile};
         }
       }
 
-      if (this.state.rotationChanged && (type === 'points' || type === 'height')) {
-        layer.updateRotation(this.state.xRotation, this.state.yRotation, this.state.zRotation);
+      const {
+        rotationChanged,
+        xRotation,
+        yRotation,
+        zRotation,
+        translationChanged,
+        xTranslation,
+        yTranslation,
+        zTranslation,
+        bounds
+      } = this.state;
+
+      if (rotationChanged && (type === 'points' || type === 'height')) {
+        layer.updateRotation(xRotation, yRotation, zRotation);
       }
 
-      if (this.state.translationChanged && (type === 'points' || type === 'height')) {
-        layer.updateTranslation(
-          this.state.xTranslation,
-          this.state.yTranslation,
-          this.state.zTranslation
-        );
+      if (translationChanged && (type === 'points' || type === 'height')) {
+        layer.updateTranslation(xTranslation, yTranslation, zTranslation);
       }
 
-      if (this.state.bounds && type === 'points') {
-        layer.updateBounds(this.state.bounds);
+      if (bounds && type === 'points') {
+        layer.updateBounds(bounds);
       }
+
       // update layer visibility
       if (layer && layer.props && !layer.props.visible) {
         // Still has GPU resource but visibility is turned off so turn it back on so we can render it.
@@ -652,7 +916,7 @@ export default class Roames3DLayer extends CompositeLayer {
         }
 
         if (type === 'height') {
-          layerMap[tile.id].layer = layer;
+          layerMap[`${tile.id}-height`].layer = layer;
         }
       }
       return layer;
@@ -678,10 +942,9 @@ export default class Roames3DLayer extends CompositeLayer {
       }
 
       if (type === 'height') {
-        layerMap[tile.id].layer = layer;
+        layerMap[`${tile.id}-height`].layer = layer;
       }
     }
-
     return layer;
   }
   /* eslint-enable complexity, max-statements */

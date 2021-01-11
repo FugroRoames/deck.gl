@@ -29,9 +29,9 @@ const RESOLUTION = 2; // (number of common space pixels) / (number texels)
 const SIZE_2K = 2048;
 
 const defaultProps = {
-  getPosition: {type: 'accessor', value: x => x.position},
-  getGpsPosition: {type: 'accessor', value: x => x.gpsPosition},
-  getGpsDirection: {type: 'accessor', value: x => x.gpsDirection},
+  getPosition: {type: 'accessor', value: (x) => x.position},
+  getGpsPosition: {type: 'accessor', value: (x) => x.gpsPosition},
+  getGpsDirection: {type: 'accessor', value: (x) => x.gpsDirection},
   radiusPixels: {type: 'number', min: 1, max: 100, value: 5},
   threshold: {type: 'number', min: 0, max: 1, value: 0.05},
   totalWeightsTransform: null,
@@ -224,9 +224,7 @@ export default class RoamesHeightLayer extends AggregationLayer {
     this.setState({textureSize});
     if (!floatTargetSupport) {
       log.warn(
-        `RoamesHeightLayer: ${
-          this.id
-        } rendering to float texture not supported, fallingback to low precession format`
+        `RoamesHeightLayer: ${this.id} rendering to float texture not supported, fallingback to low precession format`
       )();
     }
   }
@@ -275,6 +273,7 @@ export default class RoamesHeightLayer extends AggregationLayer {
         blend: true,
         blendFunc: [GL.ONE, GL.ONE],
         blendEquation: GL.MAX
+        // dither: false
       },
       clearRenderTarget: false,
       attributes: this.getAttributes(),

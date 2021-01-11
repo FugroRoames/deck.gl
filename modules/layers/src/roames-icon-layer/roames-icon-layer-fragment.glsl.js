@@ -26,11 +26,13 @@ precision highp float;
 uniform float opacity;
 uniform sampler2D iconsTexture;
 uniform float alphaCutoff;
+uniform float zoomLevel;
+uniform float textureSize;
 
 varying float vColorMode;
 varying vec4 vColor;
 varying vec2 vTextureCoords;
-varying vec2 vTexCoords;
+varying vec2 vHeightTexCoords;
 varying vec2 uv;
 varying float iconHeight;
 uniform sampler2D heightTexture;
@@ -46,22 +48,49 @@ vec4 getLinearColor(float value) {
 
 void main(void) {
   vec4 texColor = texture2D(iconsTexture, vTextureCoords);
-  float height = texture2D(heightTexture, vTexCoords).r;
+  float a = texColor.a * opacity * vColor.a;
+
+  if (a < alphaCutoff) {
+    discard;
+  }
+
+  const int size = 10;
+  vec2 texCoordForKernel;
+  float height = nullValue;
+  float sum = 0.;
+  float sampleCount = 0.;
+  float pixel_size = 1./2048.; //textureSize;
+
+  for (int i = -1*size/2; i < size/2; i++) {
+    for (int j = -1*size/2; j < size/2; j++) {
+      texCoordForKernel = vec2(vHeightTexCoords.x + float(i) * pixel_size, vHeightTexCoords.y + float(j) * pixel_size);
+      height = texture2D(heightTexture, texCoordForKernel).r;
+      if (height != nullValue) {
+        sum += height;
+        sampleCount += 1.;
+      }
+    }
+  }
+
+  if (sampleCount != 0.) {
+    height = sum / sampleCount;
+  } else {
+    height = nullValue;
+  }
+  // float height = texture2D(heightTexture, vHeightTexCoords).r;
 
   // if colorMode == 0, use pixel color from the texture
   // if colorMode == 1 or rendering picking buffer, use texture as transparency mask
   // vec3 color = mix(texColor.rgb, vColor.rgb, vColorMode);
   // Take the global opacity and the alpha from vColor into account for the alpha component
-  float a = texColor.a * opacity * vColor.a;
   vec4 color = vec4(255.);
   
-  if (a < alphaCutoff) {
-    discard;
-  }
-
-  if (height != nullValue) {
-    color = getLinearColor(height - iconHeight);
-  }
+  // if (zoomLevel <= 19.) {
+  //   color.rgb = vec3(0.);
+  // } else if (height != nullValue) {
+  //   color = getLinearColor(height - iconHeight);
+  // }
+  color = getLinearColor(height - iconHeight);
 
   gl_FragColor = color; //vec4(color, a);
   DECKGL_FILTER_COLOR(gl_FragColor, geometry);

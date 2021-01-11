@@ -2,8 +2,11 @@ export default `\
 #define SHADER_NAME weight-vertex-shader
 
 attribute vec3 positions;
+attribute vec3 positions64Low;
 attribute vec3 gpsPositions;
+attribute vec3 gpsPositions64Low;
 attribute vec4 gpsDirections;
+attribute vec4 gpsDirections64Low;
 
 varying float weightsTexture;
 uniform float radiusPixels;

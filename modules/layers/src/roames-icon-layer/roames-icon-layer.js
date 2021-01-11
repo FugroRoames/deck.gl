@@ -19,13 +19,16 @@
 // THE SOFTWARE.
 import {Layer, project32, picking} from '@deck.gl/core';
 import GL from '@luma.gl/constants';
-import {Model, Geometry} from '@luma.gl/core';
+import {Model, Geometry, getParameters} from '@luma.gl/core';
 
 import vs from './roames-icon-layer-vertex.glsl';
 import fs from './roames-icon-layer-fragment.glsl';
 import IconManager from '../icon-layer/icon-manager';
+import {updateBounds, worldToCommonTextureBounds} from '../../../core/src/utils/bound-utils';
 
 const DEFAULT_COLOR = [0, 0, 0, 255];
+const RESOLUTION = 2; // (number of common space pixels) / (number texels)
+const SIZE_2K = 2048;
 /*
  * @param {object} props
  * @param {Texture2D | string} props.iconAtlas - atlas image url or texture
@@ -59,14 +62,15 @@ const defaultProps = {
   sizeMaxPixels: {type: 'number', min: 0, value: Number.MAX_SAFE_INTEGER}, // max point radius in pixels
   alphaCutoff: {type: 'number', value: 0.05, min: 0, max: 1},
 
-  getPosition: {type: 'accessor', value: x => x.position},
-  getIcon: {type: 'accessor', value: x => x.icon},
+  getPosition: {type: 'accessor', value: (x) => x.position},
+  getIcon: {type: 'accessor', value: (x) => x.icon},
   getColor: {type: 'accessor', value: DEFAULT_COLOR},
   getSize: {type: 'accessor', value: 1},
   getAngle: {type: 'accessor', value: 0},
   getPixelOffset: {type: 'accessor', value: [0, 0]},
   getTexCoords: {type: 'accesor', value: [0, 0]},
-  heightTexture: null
+  heightTexture: null,
+  nullValue: -2147483648
 };
 
 export default class RoamesIconLayer extends Layer {
@@ -120,16 +124,16 @@ export default class RoamesIconLayer extends Layer {
         size: 2,
         transition: true,
         accessor: 'getPixelOffset'
-      },
-      texCoords: {
-        size: 2,
-        type: GL.DOUBLE,
-        fp64: true,
-        noAlloc: true,
-        accessor: 'getTexCoords'
       }
     });
+
+    const {gl} = this.context;
+    this.setState({textureSize: Math.min(SIZE_2K, getParameters(gl, gl.MAX_TEXTURE_SIZE))});
     /* eslint-enable max-len */
+  }
+
+  shouldUpdateState({changeFlags}) {
+    return changeFlags.somethingChanged;
   }
 
   /* eslint-disable max-statements, complexity */
@@ -182,6 +186,20 @@ export default class RoamesIconLayer extends Layer {
       this.setState({model: this._getModel(gl)});
       attributeManager.invalidateAll();
     }
+
+    if (changeFlags.viewportChanged) {
+      const {worldBounds, textureSize} = this.state;
+
+      const newState = {};
+      changeFlags.boundsChanged = updateBounds(
+        this.context.viewport,
+        worldBounds,
+        {textureSize, resolution: RESOLUTION},
+        newState,
+        true
+      );
+      this.setState(newState);
+    }
   }
   /* eslint-enable max-statements, complexity */
 
@@ -208,9 +226,18 @@ export default class RoamesIconLayer extends Layer {
       colorDomain,
       nullValue
     } = this.props;
-
-    const {iconManager} = this.state;
+    const {iconManager, textureSize, worldBounds} = this.state;
     const {viewport} = this.context;
+
+    const {coordinateSystem, coordinateOrigin} = this.props;
+    // convert world bounds to common using Layer's coordiante system and origin
+    const commonBounds = worldToCommonTextureBounds(
+      worldBounds,
+      viewport,
+      {textureSize, resolution: RESOLUTION},
+      coordinateSystem,
+      coordinateOrigin
+    );
 
     const iconsTexture = iconManager.getTexture();
     if (iconsTexture && iconsTexture.loaded) {
@@ -227,7 +254,10 @@ export default class RoamesIconLayer extends Layer {
             heightTexture,
             colorTexture,
             colorDomain,
-            nullValue
+            nullValue,
+            commonBounds,
+            textureSize,
+            zoomLevel: viewport.zoom
           })
         )
         .draw();

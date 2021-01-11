@@ -1783,6 +1783,14 @@
     "@babel/runtime" "^7.3.1"
     "@loaders.gl/loader-utils" "2.3.0"
 
+"@loaders.gl/core@2.3.7":
+  version "2.3.7"
+  resolved "https://registry.yarnpkg.com/@loaders.gl/core/-/core-2.3.7.tgz#1671dd4e924c6d033218d09b45b6a937dec57408"
+  integrity sha512-jFKhN2+7JwyoIRzJ0YtWHqjhFtVRum7HVqFqVcz8I8NosB5LEdswnnpGVxTtM5XLIaixdGzfH8i8jq37Kpg0Ag==
+  dependencies:
+    "@babel/runtime" "^7.3.1"
+    "@loaders.gl/loader-utils" "2.3.7"
+
 "@loaders.gl/csv@^2.3.0":
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/@loaders.gl/csv/-/csv-2.3.0.tgz#3d8df34059328ef0adb948844ce8bd56b21aa0d2"
@@ -1809,6 +1817,15 @@
     "@mapbox/vector-tile" "^1.3.1"
     pbf "^3.2.1"
 
+"@loaders.gl/gis@2.3.7":
+  version "2.3.7"
+  resolved "https://registry.yarnpkg.com/@loaders.gl/gis/-/gis-2.3.7.tgz#4767e4517c4f5913c9b1eb6a7b64f2df146b5e3a"
+  integrity sha512-zQAWKedBBJECK2+TokMfu7rV//Kv9nGNCYwulu+221bP1XmJz9SgdsWMj3RuSALVPet/ia/RV3Mdg4p324SKUA==
+  dependencies:
+    "@loaders.gl/loader-utils" "2.3.7"
+    "@mapbox/vector-tile" "^1.3.1"
+    pbf "^3.2.1"
+
 "@loaders.gl/gltf@2.3.0":
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/@loaders.gl/gltf/-/gltf-2.3.0.tgz#6f2972155c6ddc84768ee39fdecae0470bd9de0e"
@@ -1826,13 +1843,14 @@
   dependencies:
     "@loaders.gl/loader-utils" "2.3.0"
 
-"@loaders.gl/las@^2.3.5":
-  version "2.3.5"
-  resolved "https://registry.yarnpkg.com/@loaders.gl/las/-/las-2.3.5.tgz#f42961a67a41fcf9f4b496824bba3c60def8db21"
-  integrity sha512-tf9Jmk++ppfBiTK+upsctQgzLlMGUEoPmbFbEBBH47kOCuBKvpKVTYaGcUssBss0htcp8gVcRS2Ao6aCkGe24w==
+"@loaders.gl/json@^2.3.0":
+  version "2.3.7"
+  resolved "https://registry.yarnpkg.com/@loaders.gl/json/-/json-2.3.7.tgz#0037b6c9f206ff0d21420fd0a3482276aab6ad69"
+  integrity sha512-ykU354cr9R5M6cQRvtfEYIn9LKDoQ/XUsxfEs0vvMeFNRe6eQP1RiLU2ZpvdFUGsKchwvtVqgOC76UyeXACyXA==
   dependencies:
-    "@babel/runtime" "^7.3.1"
-    "@loaders.gl/loader-utils" "2.3.5"
+    "@loaders.gl/gis" "2.3.7"
+    "@loaders.gl/loader-utils" "2.3.7"
+    "@loaders.gl/tables" "2.3.7"
 
 "@loaders.gl/loader-utils@2.3.0", "@loaders.gl/loader-utils@^2.3.0":
   version "2.3.0"
@@ -1842,10 +1860,10 @@
     "@babel/runtime" "^7.3.1"
     "@probe.gl/stats" "^3.3.0"
 
-"@loaders.gl/loader-utils@2.3.5":
-  version "2.3.5"
-  resolved "https://registry.yarnpkg.com/@loaders.gl/loader-utils/-/loader-utils-2.3.5.tgz#d742ecd914a614233427240ca69a54bae0c29a66"
-  integrity sha512-zQv4dM+wHQy5l4zzfeYNrR67MTuhfTDR2a12ybe1GIX+DH5i3iYW1mubjx0dVuV4WaqJiXscL3FCVuWHYMbNSA==
+"@loaders.gl/loader-utils@2.3.7":
+  version "2.3.7"
+  resolved "https://registry.yarnpkg.com/@loaders.gl/loader-utils/-/loader-utils-2.3.7.tgz#800d5f31a32a85d7400f3c2e8774484186fa0796"
+  integrity sha512-PYjlt7UmUNqAb/F/52Om/hJt6yEZdIH6ucH+145kEKBTqVR45z5K1/3DrNjQg0Ofo9yUMbVGdtACT4mVlbBrzg==
   dependencies:
     "@babel/runtime" "^7.3.1"
     "@probe.gl/stats" "^3.3.0"
@@ -1889,6 +1907,14 @@
   integrity sha512-kCqzfRzpv2xrLcR+40fWuVr1maTj4XeFaKHpzaffeaFFazAMDtzc+ycjfhZCrGMB0ZGwW964pEKRnZ8JYa9stQ==
   dependencies:
     "@loaders.gl/core" "2.3.0"
+    d3-dsv "^1.2.0"
+
+"@loaders.gl/tables@2.3.7":
+  version "2.3.7"
+  resolved "https://registry.yarnpkg.com/@loaders.gl/tables/-/tables-2.3.7.tgz#b1ed230e17967a7026a3ffa28e1f15b98f3eb88b"
+  integrity sha512-jTxbxtlane8ofNDgdg8/eyjsejtvHeyE4L0nORn6anNIIegAgs3Y25KrgGnuhjAVdaFgN1bhegHnkSAt7qiiIQ==
+  dependencies:
+    "@loaders.gl/core" "2.3.7"
     d3-dsv "^1.2.0"
 
 "@loaders.gl/terrain@^2.3.0":
