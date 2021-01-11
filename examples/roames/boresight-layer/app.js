@@ -116,7 +116,7 @@ export default function App({
   const [boundBoxState, setBoundBoxState] = useState(BOUND_BOX);
   const [clickInfo, setClickInfo] = useState({});
 
-  const onTilesetLoad = (tileset) => {
+  const onTilesetLoad = tileset => {
     // Recenter view to cover the new tileset
     const {cartographicCenter, zoom} = tileset;
     setInitialViewState({
@@ -166,7 +166,7 @@ export default function App({
     })
   ];
 
-  const onClick = (info) => {
+  const onClick = info => {
     if (!drawBoundingBox || boundBoxState.widthPoint) {
       setBoundBoxState({BOUND_BOX});
       return;
@@ -221,7 +221,7 @@ export default function App({
     setClickInfo({});
   };
 
-  const onViewStateChange = (event) => {
+  const onViewStateChange = event => {
     hideTooltip();
     const viewState = event.viewState;
     const viewId = event.viewId;
@@ -234,7 +234,7 @@ export default function App({
     }
 
     if (viewId === 'main') {
-      setInitialViewState((currentViewStates) => ({
+      setInitialViewState(currentViewStates => ({
         main: {
           ...viewState,
           target: null,
@@ -251,7 +251,7 @@ export default function App({
         }
       }));
     } else {
-      setInitialViewState((currentViewStates) => ({
+      setInitialViewState(currentViewStates => ({
         main: {
           ...currentViewStates.main,
           longitude: viewState.longitude,

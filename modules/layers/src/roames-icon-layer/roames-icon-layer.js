@@ -62,8 +62,8 @@ const defaultProps = {
   sizeMaxPixels: {type: 'number', min: 0, value: Number.MAX_SAFE_INTEGER}, // max point radius in pixels
   alphaCutoff: {type: 'number', value: 0.05, min: 0, max: 1},
 
-  getPosition: {type: 'accessor', value: (x) => x.position},
-  getIcon: {type: 'accessor', value: (x) => x.icon},
+  getPosition: {type: 'accessor', value: x => x.position},
+  getIcon: {type: 'accessor', value: x => x.icon},
   getColor: {type: 'accessor', value: DEFAULT_COLOR},
   getSize: {type: 'accessor', value: 1},
   getAngle: {type: 'accessor', value: 0},

@@ -41,9 +41,9 @@ const defaultProps = {
   data: null,
   loadOptions: {},
   loader: Tiles3DLoader,
-  onTilesetLoad: (tileset3d) => {},
-  onTileLoad: (tileHeader) => {},
-  onTileUnload: (tileHeader) => {},
+  onTilesetLoad: tileset3d => {},
+  onTileLoad: tileHeader => {},
+  onTileUnload: tileHeader => {},
   onTileError: (tile, message, url) => {},
   xRotation: 0,
   yRotation: 0,
@@ -356,7 +356,7 @@ export default class Roames3DLayer extends CompositeLayer {
 
     triPositionBuffer.subData(packVertices64(viewportCorners, 3));
 
-    const textureBounds = viewportCorners.map((p) =>
+    const textureBounds = viewportCorners.map(p =>
       getTextureCoordinates(viewport.projectPosition(p), normalizedCommonBounds)
     );
     triTexCoordBuffer.subData(packVertices(textureBounds, 2));
@@ -388,7 +388,7 @@ export default class Roames3DLayer extends CompositeLayer {
       return null;
     }
     const sublayers = tileset3d.tiles
-      .map((tile) => {
+      .map(tile => {
         const layers = [];
 
         if (boundingBox) {
@@ -682,9 +682,9 @@ export default class Roames3DLayer extends CompositeLayer {
       billboard: true,
       colorTexture,
       colorDomain,
-      getPosition: (d) => d.geometry.coordinates,
-      getIcon: (d) => 'marker',
-      getSize: (d) => 5,
+      getPosition: d => d.geometry.coordinates,
+      getIcon: d => 'marker',
+      getSize: d => 5,
       nullValue,
       updateTriggers: {
         heightTexture: totalWeightsTexture
@@ -768,13 +768,13 @@ export default class Roames3DLayer extends CompositeLayer {
       {
         id: `${this.id}-polygonlayer-${tileHeader.id}`,
         data,
-        getPolygon: (d) => d.polygon,
+        getPolygon: d => d.polygon,
         extruded: true,
         filled: false,
         stroked: true,
         wireframe: true,
         getElevation: z_shift,
-        getColor: (d) => [255, 0, 0, 255]
+        getColor: d => [255, 0, 0, 255]
       }
     );
   }

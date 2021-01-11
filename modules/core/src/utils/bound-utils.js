@@ -113,8 +113,8 @@ export function commonScreenToWorldBounds(commonBounds, viewport) {
 
 export function getBounds(points) {
   // Now build bounding box in world space (aligned to world coordiante system)
-  const x = points.map((p) => p[0]);
-  const y = points.map((p) => p[1]);
+  const x = points.map(p => p[0]);
+  const y = points.map(p => p[1]);
 
   const xMin = Math.min.apply(null, x);
   const xMax = Math.max.apply(null, x);

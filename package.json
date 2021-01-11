@@ -75,8 +75,5 @@
   "pre-commit": [
     "test-fast",
     "bindings-precommit-tests"
-  ],
-  "dependencies": {
-    "prettier": "^2.2.1"
-  }
+  ]
 }

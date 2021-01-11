@@ -45,9 +45,9 @@ const defaultProps = {
   nullValue: NULL_VALUE,
   groundPointUrl: null,
   heightDiffTexture: true,
-  onTilesetLoad: (tileset3d) => {},
-  onTileLoad: (tileHeader) => {},
-  onTileUnload: (tileHeader) => {},
+  onTilesetLoad: tileset3d => {},
+  onTileLoad: tileHeader => {},
+  onTileUnload: tileHeader => {},
   onTileError: (tile, message, url) => {}
 };
 
@@ -90,7 +90,7 @@ export default class BoresightLayer extends CompositeLayer {
     const {groundPointUrl} = this.props;
     if (groundPointUrl) {
       const groundPointPromise = fetchGCP(groundPointUrl);
-      groundPointPromise.then((geojson) => {
+      groundPointPromise.then(geojson => {
         this.setState({groundPointData: geojson.features, gcpLoaded: true});
       });
     }
@@ -213,7 +213,7 @@ export default class BoresightLayer extends CompositeLayer {
 
     // Get the updated textures for each layer
     const textures = [];
-    subLayers.map((r3dlayer) => {
+    subLayers.map(r3dlayer => {
       textures.push(r3dlayer.getTexture());
     });
 
@@ -279,7 +279,7 @@ export default class BoresightLayer extends CompositeLayer {
         wireframe: true,
         opacity: 0.1,
         getLineWidth: 1,
-        getPolygon: (d) => d.bounds,
+        getPolygon: d => d.bounds,
         getFillColor: [255, 0, 0]
       });
 
@@ -331,7 +331,7 @@ export default class BoresightLayer extends CompositeLayer {
 
     triPositionBuffer.subData(packVertices64(viewportCorners, 3));
 
-    const textureBounds = viewportCorners.map((p) =>
+    const textureBounds = viewportCorners.map(p =>
       getTextureCoordinates(viewport.projectPosition(p), normalizedCommonBounds)
     );
     triTexCoordBuffer.subData(packVertices(textureBounds, 2));
