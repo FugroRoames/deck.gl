@@ -248,8 +248,9 @@ export default class RoamesPointCloudLayer extends Layer {
     }
     if (Object.keys(bounds).length === 0) {
       this.setState({bounds: null});
+    } else {
+      this.setState({bounds});
     }
-    this.setState({bounds});
   }
 
   _getModel(gl) {
