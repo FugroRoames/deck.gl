@@ -168,7 +168,7 @@ export default function App({
 
   const onClick = info => {
     if (!drawBoundingBox || boundBoxState.widthPoint) {
-      setBoundBoxState({BOUND_BOX});
+      setBoundBoxState({});
       return;
     }
 

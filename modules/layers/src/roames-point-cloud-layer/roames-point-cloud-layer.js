@@ -246,6 +246,9 @@ export default class RoamesPointCloudLayer extends Layer {
     if (!this.state) {
       return;
     }
+    if (Object.keys(bounds).length === 0) {
+      this.setState({bounds: null});
+    }
     this.setState({bounds});
   }
 

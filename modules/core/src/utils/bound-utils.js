@@ -26,10 +26,13 @@ export function updateBounds(viewport, worldBounds, textureInfo, newState, force
     // #4 :convert aligned common bounds to world bounds
     worldBounds = commonScreenToWorldBounds(scaledCommonBounds, viewport);
     // Clip webmercator projection limits
-    worldBounds[1] = Math.max(worldBounds[1], -85.051129);
-    worldBounds[3] = Math.min(worldBounds[3], 85.051129);
-    worldBounds[0] = Math.max(worldBounds[0], -360);
-    worldBounds[2] = Math.min(worldBounds[2], 360);
+    worldBounds[1] = Math.max(
+      Number.isNaN(worldBounds[1]) ? -85.051129 : worldBounds[1],
+      -85.051129
+    );
+    worldBounds[3] = Math.min(Number.isNaN(worldBounds[3]) ? 85.051129 : worldBounds[3], 85.051129);
+    worldBounds[0] = Math.max(Number.isNaN(worldBounds[0]) ? -360 : worldBounds[0], -360);
+    worldBounds[2] = Math.min(Number.isNaN(worldBounds[2]) ? 360 : worldBounds[2], 360);
 
     // #5: now convert world bounds to common
     const normalizedCommonBounds = worldToCommonScreenBounds(worldBounds, viewport, textureInfo);
