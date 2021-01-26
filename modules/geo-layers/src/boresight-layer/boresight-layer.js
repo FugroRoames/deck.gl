@@ -28,16 +28,19 @@ const defaultProps = {
   getPointColor: [0, 0, 0],
   colorDomain: {type: 'array', value: [-10, 10], optional: true},
   pointSize: 1.0,
-  colorRange: [
-    [240, 8, 244],
-    [253, 151, 6],
-    [253, 253, 19],
-    [251, 51, 51],
-    [0, 252, 253],
-    [99, 253, 97],
-    [9, 153, 3],
-    [0, 0, 200]
-  ],
+  colorRange: {
+    type: 'array',
+    value: [
+      [240, 8, 244],
+      [253, 151, 6],
+      [253, 253, 19],
+      [251, 51, 51],
+      [0, 252, 253],
+      [99, 253, 97],
+      [9, 153, 3],
+      [0, 0, 200]
+    ]
+  },
   data: null,
   loadOptions: {},
   loader: Tiles3DLoader,
