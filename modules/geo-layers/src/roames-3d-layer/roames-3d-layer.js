@@ -281,6 +281,12 @@ export default class Roames3DLayer extends CompositeLayer {
     }
   }
 
+  updateColorDomain(colorDomain) {
+    if (this.state) {
+      this.setState({colorDomain});
+    }
+  }
+
   finalizeState() {
     super.finalizeState();
     const {
@@ -653,8 +659,14 @@ export default class Roames3DLayer extends CompositeLayer {
   }
 
   _createGroundControlLayer() {
-    const {groundPointData, groundControl, totalWeightsTexture, colorTexture} = this.state;
-    const {nullValue, colorDomain} = this.props;
+    const {
+      groundPointData,
+      groundControl,
+      totalWeightsTexture,
+      colorTexture,
+      colorDomain
+    } = this.state;
+    const {nullValue} = this.props;
 
     if (!groundControl || !groundPointData || !totalWeightsTexture || !colorTexture) {
       return null;
@@ -687,7 +699,8 @@ export default class Roames3DLayer extends CompositeLayer {
       getSize: d => 5,
       nullValue,
       updateTriggers: {
-        heightTexture: totalWeightsTexture
+        heightTexture: totalWeightsTexture,
+        colorDomain
       }
     });
   }

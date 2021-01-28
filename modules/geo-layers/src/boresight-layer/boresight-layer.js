@@ -121,6 +121,10 @@ export default class BoresightLayer extends CompositeLayer {
       this._updateColorTexture(opts);
     }
 
+    if (props.colorDomain !== oldProps.colorDomain) {
+      this.setState({colorDomainChanged: true});
+    }
+
     if (oldProps.data && props.data !== oldProps.data) {
       this._checkToggledChanges(oldProps, props);
     }
@@ -140,7 +144,7 @@ export default class BoresightLayer extends CompositeLayer {
 
   /* eslint-disable complexity, max-statements */
   renderLayers() {
-    const {layerMap, bounds, groundPointData, gcpLoaded} = this.state;
+    const {layerMap, bounds, groundPointData, gcpLoaded, colorDomainChanged} = this.state;
     const {
       data,
       loader,
@@ -206,6 +210,11 @@ export default class BoresightLayer extends CompositeLayer {
         this.setState({gcpLoaded: false});
       } else if (layerMap[dataUrl].displayTextureToggled) {
         layer.updateDisplayTexture(displayTexture);
+      }
+
+      if (colorDomainChanged) {
+        layer.updateColorDomain(colorDomain);
+        this.setState({colorDomainChanged: false});
       }
 
       if (bounds) {
