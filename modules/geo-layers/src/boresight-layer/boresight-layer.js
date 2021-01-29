@@ -117,9 +117,10 @@ export default class BoresightLayer extends CompositeLayer {
     this.setState(newState);
     // }
 
-    if (props.colorRange !== oldProps.colorRange) {
-      this._updateColorTexture(opts);
-    }
+    // Testing to see if this fixes something
+    // if (props.colorRange !== oldProps.colorRange) {
+    this._updateColorTexture(opts);
+    // }
 
     if (props.colorDomain !== oldProps.colorDomain) {
       this.setState({colorDomainChanged: true});
