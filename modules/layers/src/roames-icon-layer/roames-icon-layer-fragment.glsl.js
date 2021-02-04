@@ -20,6 +20,7 @@
 
 export default `\
 #define SHADER_NAME icon-layer-fragment-shader
+#define MAX_COLOR_DOMAIN 128
 
 precision highp float;
 
@@ -37,11 +38,27 @@ varying vec2 uv;
 varying float iconHeight;
 uniform sampler2D heightTexture;
 uniform sampler2D colorTexture;
-uniform vec2 colorDomain;
+uniform float colorDomain[MAX_COLOR_DOMAIN];
 uniform float nullValue;
+uniform int colorDomainSize;
 
 vec4 getLinearColor(float value) {
   float factor = clamp((value - colorDomain[0])/(colorDomain[1] - colorDomain[0]), 0., 1.);
+  vec4 color = texture2D(colorTexture, vec2(factor, 0.));
+  return color;
+}
+
+vec4 getColor(float value) {
+  int index = colorDomainSize;
+  for (int i = 0; i < MAX_COLOR_DOMAIN; i++) {
+    if (i == colorDomainSize) {break;}
+    if (value < colorDomain[i]) {
+      index = i;
+      break;
+    }
+  }
+
+  float factor = float(index)/float(colorDomainSize);
   vec4 color = texture2D(colorTexture, vec2(factor, 0.));
   return color;
 }
@@ -90,7 +107,11 @@ void main(void) {
   // } else if (height != nullValue) {
   //   color = getLinearColor(height - iconHeight);
   // }
-  color = getLinearColor(height - iconHeight);
+  if (colorDomainSize == 2) {
+    color = getLinearColor(weighttwo - weightone);
+  } else {
+    color = getColor(weighttwo - weightone);
+  } 
 
   gl_FragColor = color; //vec4(color, a);
   DECKGL_FILTER_COLOR(gl_FragColor, geometry);

@@ -20,6 +20,7 @@
 
 export default `\
 #define SHADER_NAME boresight-layer-fragment-shader
+#define MAX_COLOR_DOMAIN 128
 
 precision highp float;
 
@@ -28,11 +29,27 @@ uniform sampler2D textureone;
 uniform sampler2D texturetwo;
 varying vec2 vTexCoords;
 uniform sampler2D colorTexture;
-uniform vec2 colorDomain;
+uniform float colorDomain[MAX_COLOR_DOMAIN];
 uniform float nullValue;
+uniform int colorDomainSize;
 
 vec4 getLinearColor(float value) {
   float factor = clamp((value - colorDomain[0])/(colorDomain[1] - colorDomain[0]), 0., 1.);
+  vec4 color = texture2D(colorTexture, vec2(factor, 0.));
+  return color;
+}
+
+vec4 getColor(float value) {
+  int index = colorDomainSize;
+  for (int i = 0; i < MAX_COLOR_DOMAIN; i++) {
+    if (i == colorDomainSize) {break;}
+    if (value < colorDomain[i]) {
+      index = i;
+      break;
+    }
+  }
+
+  float factor = float(index)/float(colorDomainSize);
   vec4 color = texture2D(colorTexture, vec2(factor, 0.));
   return color;
 }
@@ -44,7 +61,14 @@ void main(void) {
     discard;
   }
 
-  vec4 linearColor = getLinearColor(weighttwo - weightone);
-  gl_FragColor = linearColor;
+  vec4 color = vec4(0.);
+  // If there's only two values, it's a linear interpolation
+  if (colorDomainSize == 2) {
+    color = getLinearColor(weighttwo - weightone);
+  } else {
+    color = getColor(weighttwo - weightone);
+  } 
+
+  gl_FragColor = color;
 }
 `;

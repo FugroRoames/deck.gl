@@ -73,7 +73,8 @@ export default class TriangleLayer extends Layer {
         texturetwo,
         colorTexture,
         colorDomain,
-        nullValue
+        nullValue,
+        colorDomainSize: colorDomain.length
       })
       .draw();
   }
