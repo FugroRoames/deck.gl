@@ -38,12 +38,16 @@ varying vec2 uv;
 varying float iconHeight;
 uniform sampler2D heightTexture;
 uniform sampler2D colorTexture;
-uniform float colorDomain[MAX_COLOR_DOMAIN];
+uniform sampler2D colorDomainTexture;
+// uniform float colorDomain[MAX_COLOR_DOMAIN];
 uniform float nullValue;
 uniform int colorDomainSize;
 
 vec4 getLinearColor(float value) {
-  float factor = clamp((value - colorDomain[0])/(colorDomain[1] - colorDomain[0]), 0., 1.);
+  float min = texture2D(colorDomainTexture, vec2(0.,0.));
+  float max = texture2D(colorDomainTexture, vec2(1.,0.));
+
+  float factor = clamp((value - min)/(max - min), 0., 1.);
   vec4 color = texture2D(colorTexture, vec2(factor, 0.));
   return color;
 }
@@ -52,7 +56,8 @@ vec4 getColor(float value) {
   int index = colorDomainSize;
   for (int i = 0; i < MAX_COLOR_DOMAIN; i++) {
     if (i == colorDomainSize) {break;}
-    if (value < colorDomain[i]) {
+    float posx = float(i)/float(colorDomainSize);
+    if (value < teture2D(colorDomainTexture, vec2(posx, 0.))) {
       index = i;
       break;
     }

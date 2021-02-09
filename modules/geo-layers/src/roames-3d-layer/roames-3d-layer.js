@@ -30,14 +30,15 @@ import {
   packVertices,
   packVertices64
 } from '../../../core/src/utils/bound-utils';
-import {colorRangeToFlatArray} from '../../../aggregation-layers/src/utils/color-utils';
+// import {colorRangeToFlatArray} from '../../../aggregation-layers/src/utils/color-utils';
 
 import * as nodeUrl from 'url';
 
 const defaultProps = {
   getPointColor: [0, 0, 0],
   pointSize: 2.0,
-  colorRange: null,
+  // colorRange: null,
+  colorTexture: null,
   data: null,
   loadOptions: {},
   loader: Tiles3DLoader,
@@ -72,16 +73,16 @@ const TEXTURE_OPTIONS = {
   dataFormat: GL.RED
 };
 
-const COL_TEXTURE_OPTIONS = {
-  mipmaps: false,
-  parameters: {
-    [GL.TEXTURE_MAG_FILTER]: GL.NEAREST,
-    [GL.TEXTURE_MIN_FILTER]: GL.NEAREST,
-    [GL.TEXTURE_WRAP_S]: GL.CLAMP_TO_EDGE,
-    [GL.TEXTURE_WRAP_T]: GL.CLAMP_TO_EDGE
-  },
-  dataFormat: GL.RGBA
-};
+// const COL_TEXTURE_OPTIONS = {
+//   mipmaps: false,
+//   parameters: {
+//     [GL.TEXTURE_MAG_FILTER]: GL.NEAREST,
+//     [GL.TEXTURE_MIN_FILTER]: GL.NEAREST,
+//     [GL.TEXTURE_WRAP_S]: GL.CLAMP_TO_EDGE,
+//     [GL.TEXTURE_WRAP_T]: GL.CLAMP_TO_EDGE
+//   },
+//   dataFormat: GL.RGBA
+// };
 
 const SIZE_2K = 2048;
 const RESOLUTION = 2; // (number of common space pixels) / (number texels)
@@ -184,9 +185,9 @@ export default class Roames3DLayer extends CompositeLayer {
       this._updateTileset(tileset3d);
       totalWeightsTransform.getFramebuffer().clear({color: [nullValue, 0.0, 0.0, 0.0]});
     }
-    if (props.colorRange !== oldProps.colorRange) {
-      this._updateColorTexture(opts);
-    }
+    // if (props.colorRange !== oldProps.colorRange) {
+    //   this._updateColorTexture(opts);
+    // }
 
     // For rendering the texture
     if (displayTexture) {
@@ -281,9 +282,15 @@ export default class Roames3DLayer extends CompositeLayer {
     }
   }
 
-  updateColorDomain(colorDomain) {
+  updateColorTexture(colorTexture) {
     if (this.state) {
-      this.setState({colorDomain});
+      this.setState({colorTexture});
+    }
+  }
+
+  updateColorDomain(colorDomainTexture) {
+    if (this.state) {
+      this.setState({colorDomainTexture});
     }
   }
 
@@ -312,28 +319,28 @@ export default class Roames3DLayer extends CompositeLayer {
     }
   }
 
-  _updateColorTexture(opts) {
-    const {colorRange} = opts.props;
-    let {colorTexture} = this.state;
+  // _updateColorTexture(opts) {
+  //   const {colorRange} = opts.props;
+  //   let {colorTexture} = this.state;
 
-    const colors = colorRangeToFlatArray(colorRange, false, Uint8Array);
+  //   const colors = colorRangeToFlatArray(colorRange, false, Uint8Array);
 
-    if (colorTexture) {
-      colorTexture.setImageData({
-        data: colors,
-        width: colorRange.length
-      });
-    } else {
-      colorTexture = new Texture2D(this.context.gl, {
-        data: colors,
-        width: colorRange.length,
-        height: 1,
-        format: GL.RGBA,
-        ...COL_TEXTURE_OPTIONS
-      });
-    }
-    this.setState({colorTexture});
-  }
+  //   if (colorTexture) {
+  //     colorTexture.setImageData({
+  //       data: colors,
+  //       width: colorRange.length
+  //     });
+  //   } else {
+  //     colorTexture = new Texture2D(this.context.gl, {
+  //       data: colors,
+  //       width: colorRange.length,
+  //       height: 1,
+  //       format: GL.RGBA,
+  //       ...COL_TEXTURE_OPTIONS
+  //     });
+  //   }
+  //   this.setState({colorTexture});
+  // }
 
   _createBuffers() {
     const {gl} = this.context;
@@ -664,7 +671,7 @@ export default class Roames3DLayer extends CompositeLayer {
       groundControl,
       totalWeightsTexture,
       colorTexture,
-      colorDomain
+      colorDomainTexture
     } = this.state;
     const {nullValue} = this.props;
 
@@ -693,14 +700,14 @@ export default class Roames3DLayer extends CompositeLayer {
       sizeScale: 10,
       billboard: true,
       colorTexture,
-      colorDomain,
+      colorDomainTexture,
       getPosition: d => d.geometry.coordinates,
       getIcon: d => 'marker',
       getSize: d => 5,
       nullValue,
       updateTriggers: {
         heightTexture: totalWeightsTexture,
-        colorDomain
+        colorDomainTexture
       }
     });
   }

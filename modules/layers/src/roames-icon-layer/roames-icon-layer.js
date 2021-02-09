@@ -223,7 +223,7 @@ export default class RoamesIconLayer extends Layer {
       alphaCutoff,
       heightTexture,
       colorTexture,
-      colorDomain,
+      colorDomainTexture,
       nullValue
     } = this.props;
     const {iconManager, textureSize, worldBounds} = this.state;
@@ -253,8 +253,8 @@ export default class RoamesIconLayer extends Layer {
             alphaCutoff,
             heightTexture,
             colorTexture,
-            colorDomain,
-            colorDomainSize: colorDomain.length,
+            colorDomainTexture,
+            colorDomainSize: colorDomainTexture.length,
             nullValue,
             commonBounds,
             textureSize,

@@ -123,7 +123,7 @@ export default class BoresightLayer extends CompositeLayer {
     // }
 
     if (props.colorDomain !== oldProps.colorDomain) {
-      this.setState({colorDomainChanged: true});
+      this._updateColorDomainTexture(opts);
     }
 
     if (oldProps.data && props.data !== oldProps.data) {
@@ -145,16 +145,17 @@ export default class BoresightLayer extends CompositeLayer {
 
   /* eslint-disable complexity, max-statements */
   renderLayers() {
-    const {layerMap, bounds, groundPointData, gcpLoaded, colorDomainChanged} = this.state;
     const {
-      data,
-      loader,
-      loadOptions,
-      colorRange,
-      nullValue,
-      heightDiffTexture,
-      colorDomain
-    } = this.props;
+      layerMap,
+      bounds,
+      groundPointData,
+      gcpLoaded,
+      colorTextureChanged,
+      colorTexture,
+      colorDomainChanged,
+      colorDomainTexture
+    } = this.state;
+    const {data, loader, loadOptions, nullValue, heightDiffTexture, colorDomain} = this.props;
     const subLayers = [];
     // Calculate the texture for each tiles 3d dataset
     // call Roames3DLayer for each dataset
@@ -175,7 +176,7 @@ export default class BoresightLayer extends CompositeLayer {
           data: dataUrl,
           loader,
           loadOptions,
-          colorRange,
+          colorTexture,
           colorDomain,
           boundingBox,
           points,
@@ -213,8 +214,13 @@ export default class BoresightLayer extends CompositeLayer {
         layer.updateDisplayTexture(displayTexture);
       }
 
+      if (colorTextureChanged) {
+        layer.updateColorTexture(colorTexture);
+        this.setState({colorTextureChanged: false});
+      }
+
       if (colorDomainChanged) {
-        layer.updateColorDomain(colorDomain);
+        layer.updateColorDomain(colorDomainTexture);
         this.setState({colorDomainChanged: false});
       }
 
@@ -236,7 +242,7 @@ export default class BoresightLayer extends CompositeLayer {
       textures.push(r3dlayer.getTexture());
     });
 
-    const {triPositionBuffer, triTexCoordBuffer, colorTexture} = this.state;
+    const {triPositionBuffer, triTexCoordBuffer} = this.state;
 
     // Send the textures to the Triangle layer which will diff the values (height) and render
     if (textures && heightDiffTexture) {
@@ -258,9 +264,9 @@ export default class BoresightLayer extends CompositeLayer {
             },
             vertexCount: 4,
             colorTexture,
+            colorDomainTexture,
             textureone: textures[0],
             texturetwo: textures[1],
-            colorDomain,
             nullValue
           }
         )
@@ -311,9 +317,12 @@ export default class BoresightLayer extends CompositeLayer {
 
   finalizeState() {
     super.finalizeState();
-    const {colorTexture, triPositionBuffer, triTexCoordBuffer} = this.state;
+    const {colorTexture, colorDomainTexture, triPositionBuffer, triTexCoordBuffer} = this.state;
     if (colorTexture) {
       colorTexture.delete();
+    }
+    if (colorDomainTexture) {
+      colorDomainTexture.delete();
     }
     if (triPositionBuffer) {
       triPositionBuffer.delete();
@@ -375,7 +384,36 @@ export default class BoresightLayer extends CompositeLayer {
         ...TEXTURE_OPTIONS
       });
     }
-    this.setState({colorTexture});
+    this.setState({colorTexture, colorTextureChanged: true});
+  }
+
+  _updateColorDomainTexture(opts) {
+    const {colorDomain} = opts.props;
+    let {colorDomainTexture} = this.state;
+
+    if (colorDomainTexture) {
+      colorDomainTexture.setImageData({
+        data: new Float32Array(colorDomain),
+        width: colorDomain.length
+      });
+    } else {
+      colorDomainTexture = new Texture2D(this.context.gl, {
+        data: new Float32Array(colorDomain),
+        width: colorDomain.length,
+        height: 1,
+        format: GL.R16F,
+        mipmaps: false,
+        type: GL.FLOAT,
+        parameters: {
+          [GL.TEXTURE_MAG_FILTER]: GL.NEAREST,
+          [GL.TEXTURE_MIN_FILTER]: GL.NEAREST,
+          [GL.TEXTURE_WRAP_S]: GL.CLAMP_TO_EDGE,
+          [GL.TEXTURE_WRAP_T]: GL.CLAMP_TO_EDGE
+        },
+        dataFormat: GL.RED
+      });
+    }
+    this.setState({colorDomainTexture, colorDomainChanged: true});
   }
 
   /* eslint-disable complexity, max-statements */
