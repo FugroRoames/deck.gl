@@ -45,7 +45,7 @@ vec4 getColor(float value) {
   int index = colorDomainSize;
   for (int i = 0; i < MAX_COLOR_DOMAIN; i++) {
     if (i == colorDomainSize) {break;}
-    float posx = float(i)/float(colorDomainSize);
+    float posx = (float(i)+0.5)/float(colorDomainSize);
     if (value < texture2D(colorDomainTexture, vec2(posx, 0.)).r) {
       index = i;
       break;
