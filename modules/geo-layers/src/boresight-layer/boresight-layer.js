@@ -371,6 +371,7 @@ export default class BoresightLayer extends CompositeLayer {
 
     const colors = colorRangeToFlatArray(colorRange, false, Uint8Array);
     if (colorTexture) {
+      colorTexture.resize({width: colorRange.length, height: 1});
       colorTexture.setImageData({
         data: colors,
         width: colorRange.length
@@ -392,6 +393,7 @@ export default class BoresightLayer extends CompositeLayer {
     let {colorDomainTexture} = this.state;
 
     if (colorDomainTexture) {
+      colorDomainTexture.resize({width: colorDomain.length, height: 1});
       colorDomainTexture.setImageData({
         data: new Float32Array(colorDomain),
         width: colorDomain.length
