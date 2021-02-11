@@ -52,7 +52,7 @@ vec4 getColor(float value) {
     }
   }
 
-  float factor = float(index)/float(colorDomainSize);
+  float factor = (float(index)+0.5)/float(colorDomainSize);
   vec4 color = texture2D(colorTexture, vec2(factor, 0.));
   return color;
 }
