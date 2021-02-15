@@ -57,7 +57,7 @@ vec4 getColor(float value) {
   for (int i = 0; i < MAX_COLOR_DOMAIN; i++) {
     if (i == colorDomainSize) {break;}
     float posx = float(i)/float(colorDomainSize);
-    if (value < teture2D(colorDomainTexture, vec2(posx, 0.)).r) {
+    if (value < texture2D(colorDomainTexture, vec2(posx, 0.)).r) {
       index = i;
       break;
     }
@@ -113,9 +113,9 @@ void main(void) {
   //   color = getLinearColor(height - iconHeight);
   // }
   if (colorDomainSize == 2) {
-    color = getLinearColor(weighttwo - weightone);
+    color = getLinearColor(height - iconHeight);
   } else {
-    color = getColor(weighttwo - weightone);
+    color = getColor(height - iconHeight);
   } 
 
   gl_FragColor = color; //vec4(color, a);
