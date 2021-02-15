@@ -44,8 +44,8 @@ uniform float nullValue;
 uniform int colorDomainSize;
 
 vec4 getLinearColor(float value) {
-  float min = texture2D(colorDomainTexture, vec2(0.,0.));
-  float max = texture2D(colorDomainTexture, vec2(1.,0.));
+  float min = texture2D(colorDomainTexture, vec2(0.,0.)).r;
+  float max = texture2D(colorDomainTexture, vec2(1.,0.)).r;
 
   float factor = clamp((value - min)/(max - min), 0., 1.);
   vec4 color = texture2D(colorTexture, vec2(factor, 0.));
@@ -57,7 +57,7 @@ vec4 getColor(float value) {
   for (int i = 0; i < MAX_COLOR_DOMAIN; i++) {
     if (i == colorDomainSize) {break;}
     float posx = float(i)/float(colorDomainSize);
-    if (value < teture2D(colorDomainTexture, vec2(posx, 0.))) {
+    if (value < teture2D(colorDomainTexture, vec2(posx, 0.)).r) {
       index = i;
       break;
     }
