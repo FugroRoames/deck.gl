@@ -254,7 +254,7 @@ export default class RoamesIconLayer extends Layer {
             heightTexture,
             colorTexture,
             colorDomainTexture,
-            colorDomainSize: colorDomainTexture.length,
+            colorDomainSize: colorDomainTexture.width,
             nullValue,
             commonBounds,
             textureSize,
