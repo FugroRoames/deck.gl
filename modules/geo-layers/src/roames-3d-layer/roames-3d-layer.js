@@ -30,14 +30,20 @@ import {
   packVertices,
   packVertices64
 } from '../../../core/src/utils/bound-utils';
-// import {colorRangeToFlatArray} from '../../../aggregation-layers/src/utils/color-utils';
+
+import {
+  getPropChange,
+  getHeightRange,
+  parseBatchArray,
+  createBoundingBox,
+  toQuaternion
+} from './roames-3d-layer-utils';
 
 import * as nodeUrl from 'url';
 
 const defaultProps = {
   getPointColor: [0, 0, 0],
   pointSize: 2.0,
-  // colorRange: null,
   colorTexture: null,
   data: null,
   loadOptions: {},
@@ -59,7 +65,7 @@ const defaultProps = {
   groundControl: false,
   displayTexture: false,
   bounds: null,
-  groundPointData: null
+  gcpData: null
 };
 
 const TEXTURE_OPTIONS = {
@@ -73,17 +79,6 @@ const TEXTURE_OPTIONS = {
   dataFormat: GL.RED
 };
 
-// const COL_TEXTURE_OPTIONS = {
-//   mipmaps: false,
-//   parameters: {
-//     [GL.TEXTURE_MAG_FILTER]: GL.NEAREST,
-//     [GL.TEXTURE_MIN_FILTER]: GL.NEAREST,
-//     [GL.TEXTURE_WRAP_S]: GL.CLAMP_TO_EDGE,
-//     [GL.TEXTURE_WRAP_T]: GL.CLAMP_TO_EDGE
-//   },
-//   dataFormat: GL.RGBA
-// };
-
 const SIZE_2K = 2048;
 const RESOLUTION = 2; // (number of common space pixels) / (number texels)
 const dummyArray = new Float64Array();
@@ -94,7 +89,6 @@ export default class Roames3DLayer extends CompositeLayer {
       log.removed('onTileLoadFail', 'onTileError')();
     }
 
-    // prop verification
     this.state = {
       layerMap: {},
       tileset3d: null,
@@ -104,41 +98,6 @@ export default class Roames3DLayer extends CompositeLayer {
     this._createTexture();
     this._createTransform();
     this._createBuffers();
-
-    // setting initial transformation information
-    const {
-      xRotation,
-      yRotation,
-      zRotation,
-      xTranslation,
-      yTranslation,
-      zTranslation,
-      height,
-      boundingBox,
-      points,
-      gpsPoints,
-      groundControl,
-      bounds,
-      groundPointData,
-      displayTexture
-    } = this.props;
-
-    this.setState({
-      xRotation,
-      yRotation,
-      zRotation,
-      xTranslation,
-      yTranslation,
-      zTranslation,
-      height,
-      boundingBox,
-      points,
-      gpsPoints,
-      groundControl,
-      bounds,
-      groundPointData,
-      displayTexture
-    });
   }
 
   shouldUpdateState({changeFlags}) {
@@ -147,6 +106,9 @@ export default class Roames3DLayer extends CompositeLayer {
 
   updateState(opts) {
     const {props, oldProps} = opts;
+
+    this.setState(getPropChange(props, oldProps));
+
     const {viewport} = this.context;
     const {
       worldBounds,
@@ -156,11 +118,10 @@ export default class Roames3DLayer extends CompositeLayer {
       zoom,
       rotationChanged,
       translationChanged,
-      displayTexture,
       displayTextureChanged
     } = this.state;
     const changeFlags = this._getChangeFlags(opts);
-    const {nullValue} = props;
+    const {nullValue, displayTexture} = props;
 
     if (props.data && props.data !== oldProps.data) {
       this._loadTileset(props.data);
@@ -168,9 +129,9 @@ export default class Roames3DLayer extends CompositeLayer {
 
     if (
       changeFlags.viewportChanged ||
+      viewport.zoom !== zoom ||
       rotationChanged ||
       translationChanged ||
-      viewport.zoom !== zoom ||
       displayTextureChanged
     ) {
       const newState = {};
@@ -185,9 +146,15 @@ export default class Roames3DLayer extends CompositeLayer {
       this._updateTileset(tileset3d);
       totalWeightsTransform.getFramebuffer().clear({color: [nullValue, 0.0, 0.0, 0.0]});
     }
-    // if (props.colorRange !== oldProps.colorRange) {
-    //   this._updateColorTexture(opts);
-    // }
+
+    if (rotationChanged) {
+      const {xRotation, yRotation, zRotation} = this.props;
+      this.setState({quaternion: toQuaternion(xRotation, yRotation, zRotation)});
+    }
+
+    if (props.colorRange !== oldProps.colorRange) {
+      this._updateColorTexture(opts);
+    }
 
     // For rendering the texture
     if (displayTexture) {
@@ -198,7 +165,8 @@ export default class Roames3DLayer extends CompositeLayer {
   }
 
   renderLayers() {
-    const {tileset3d, displayTexture, heightRange} = this.state;
+    const {tileset3d} = this.state;
+    const {displayTexture} = this.props;
     const {viewport} = this.context;
     if (!tileset3d) {
       return null;
@@ -209,7 +177,8 @@ export default class Roames3DLayer extends CompositeLayer {
 
     // If you want to actually render the single texture using this layer
     if (displayTexture) {
-      const {totalWeightsTexture, colorTexture, triPositionBuffer, triTexCoordBuffer} = this.state;
+      const {totalWeightsTexture, triPositionBuffer, triTexCoordBuffer, heightRange} = this.state;
+      const {colorTexture} = this.props;
       subLayers.push(
         new DebugTriangleLayer(
           {
@@ -246,54 +215,6 @@ export default class Roames3DLayer extends CompositeLayer {
     return this.state.totalWeightsTexture;
   }
 
-  updateRotation(xRotation, yRotation, zRotation) {
-    if (this.state) {
-      this.setState({xRotation, yRotation, zRotation, rotationChanged: true});
-    }
-  }
-
-  updateTranslation(xTranslation, yTranslation, zTranslation) {
-    if (this.state) {
-      this.setState({xTranslation, yTranslation, zTranslation, translationChanged: true});
-    }
-  }
-
-  updateBounds(bounds) {
-    if (this.state) {
-      this.setState({bounds});
-    }
-  }
-
-  updateLayerToggle(boundingBox, points, gpsPoints, groundControl) {
-    if (this.state) {
-      this.setState({boundingBox, points, gpsPoints, groundControl});
-    }
-  }
-
-  updateGroundPointData(groundPointData) {
-    if (this.state) {
-      this.setState({groundPointData});
-    }
-  }
-
-  updateDisplayTexture(displayTexture) {
-    if (this.state) {
-      this.setState({displayTexture, displayTextureChanged: true});
-    }
-  }
-
-  updateColorTexture(colorTexture) {
-    if (this.state) {
-      this.setState({colorTexture});
-    }
-  }
-
-  updateColorDomain(colorDomainTexture) {
-    if (this.state) {
-      this.setState({colorDomainTexture});
-    }
-  }
-
   finalizeState() {
     super.finalizeState();
     const {
@@ -318,29 +239,6 @@ export default class Roames3DLayer extends CompositeLayer {
       triTexCoordBuffer.delete();
     }
   }
-
-  // _updateColorTexture(opts) {
-  //   const {colorRange} = opts.props;
-  //   let {colorTexture} = this.state;
-
-  //   const colors = colorRangeToFlatArray(colorRange, false, Uint8Array);
-
-  //   if (colorTexture) {
-  //     colorTexture.setImageData({
-  //       data: colors,
-  //       width: colorRange.length
-  //     });
-  //   } else {
-  //     colorTexture = new Texture2D(this.context.gl, {
-  //       data: colors,
-  //       width: colorRange.length,
-  //       height: 1,
-  //       format: GL.RGBA,
-  //       ...COL_TEXTURE_OPTIONS
-  //     });
-  //   }
-  //   this.setState({colorTexture});
-  // }
 
   _createBuffers() {
     const {gl} = this.context;
@@ -396,7 +294,8 @@ export default class Roames3DLayer extends CompositeLayer {
   }
 
   _updateWeightmap() {
-    const {tileset3d, layerMap, points, gpsPoints, boundingBox, height, groundControl} = this.state;
+    const {tileset3d, layerMap} = this.state;
+    const {points, gpsPoints, boundingBox, height, groundControl} = this.props;
     if (!tileset3d) {
       return null;
     }
@@ -439,11 +338,6 @@ export default class Roames3DLayer extends CompositeLayer {
         return layers;
       })
       .filter(Boolean);
-    this.setState({
-      rotationChanged: false,
-      translationChanged: false,
-      displayTextureChanged: false
-    });
 
     if (groundControl) {
       const layer = this._createGroundControlLayer();
@@ -478,7 +372,7 @@ export default class Roames3DLayer extends CompositeLayer {
     }
 
     // Get the tileset height range for coloring range
-    const heightRange = this._getHeightRange(tileset3d);
+    const heightRange = getHeightRange(tileset3d);
     this.setState({
       tileset3d,
       layerMap: {},
@@ -489,31 +383,12 @@ export default class Roames3DLayer extends CompositeLayer {
     this.props.onTilesetLoad(tileset3d);
   }
 
-  _getHeightRange(tileHeader) {
-    const boundingVolumeCenter = tileHeader.cartesianCenter;
-    const cartCenter = [0, 0, 0];
-    cartCenter[0] = boundingVolumeCenter[0] + tileHeader.tileset.root.boundingVolume.box[3];
-    cartCenter[1] = boundingVolumeCenter[1] + tileHeader.tileset.root.boundingVolume.box[4];
-    cartCenter[2] = boundingVolumeCenter[2] + tileHeader.tileset.root.boundingVolume.box[5];
-
-    cartCenter[0] += tileHeader.tileset.root.boundingVolume.box[6];
-    cartCenter[1] += tileHeader.tileset.root.boundingVolume.box[7];
-    cartCenter[2] += tileHeader.tileset.root.boundingVolume.box[8];
-
-    cartCenter[0] += tileHeader.tileset.root.boundingVolume.box[9];
-    cartCenter[1] += tileHeader.tileset.root.boundingVolume.box[10];
-    cartCenter[2] += tileHeader.tileset.root.boundingVolume.box[11];
-    const result = [];
-    const longlatheight = Ellipsoid.WGS84.cartesianToCartographic(cartCenter, result);
-    return [tileHeader.cartographicCenter[2], longlatheight[2]];
-  }
-
   _onTileLoad(tileHeader) {
     const {batchTableJson, batchTableBinary, pointCount} = tileHeader.content;
     if (batchTableBinary && batchTableBinary) {
       const batchTable = new Tile3DFeatureTable(batchTableJson, batchTableBinary);
       batchTable.featuresLength = pointCount;
-      this._parseBatchArray(tileHeader.content, batchTable);
+      parseBatchArray(tileHeader.content, batchTable);
     }
     this.props.onTileLoad(tileHeader);
 
@@ -521,22 +396,11 @@ export default class Roames3DLayer extends CompositeLayer {
     this.setNeedsUpdate();
   }
 
-  _parseBatchArray(tile, batchTable) {
-    if (!tile.attributes.gpsPositions) {
-      if (batchTable.hasProperty('GPS_POSITION')) {
-        tile.attributes.gpsPositions = batchTable.getPropertyArray('GPS_POSITION', GL.FLOAT, 3);
-      }
-    }
-    if (!tile.attributes.gpsDirections) {
-      if (batchTable.hasProperty('GPS_DIRECTION')) {
-        tile.attributes.gpsDirections = batchTable.getPropertyArray('GPS_DIRECTION', GL.FLOAT, 4);
-      }
-    }
-  }
-
   _onTileUnload(tileHeader) {
     // Was cleaned up from tileset cache. We no longer need to track it.
-    delete this.state.layerMap[tileHeader.id];
+    if (this.state.layerMap[`${tileHeader.id}-height`]) {
+      delete this.state.layerMap[`${tileHeader.id}-height`];
+    }
 
     if (this.state.layerMap[`${tileHeader.id}-bound`]) {
       delete this.state.layerMap[`${tileHeader.id}-bound`];
@@ -609,31 +473,18 @@ export default class Roames3DLayer extends CompositeLayer {
   }
 
   _createHeightTileLayer(tileHeader) {
-    const {
-      attributes,
-      pointCount,
-      constantRGBA,
-      cartographicOrigin,
-      modelMatrix
-    } = tileHeader.content;
+    const {attributes, pointCount, cartographicOrigin, modelMatrix} = tileHeader.content;
 
     const {positions, gpsPositions, gpsDirections} = attributes;
     if (!positions) {
       return null;
     }
 
-    const {getPointColor} = this.props;
-    const {
-      totalWeightsTransform,
-      xRotation,
-      yRotation,
-      zRotation,
-      xTranslation,
-      yTranslation,
-      zTranslation
-    } = this.state;
-    const SubLayerClass = this.getSubLayerClass('roamesheight', RoamesHeightLayer);
+    const {xTranslation, yTranslation, zTranslation} = this.props;
 
+    const {totalWeightsTransform, quaternion} = this.state;
+
+    const SubLayerClass = this.getSubLayerClass('roamesheight', RoamesHeightLayer);
     return new SubLayerClass(
       this.getSubLayerProps({
         id: 'roamesheight',
@@ -654,28 +505,20 @@ export default class Roames3DLayer extends CompositeLayer {
         coordinateSystem: COORDINATE_SYSTEM.METER_OFFSETS,
         coordinateOrigin: cartographicOrigin,
         modelMatrix,
-        xRotation,
-        yRotation,
-        zRotation,
+        quaternion,
         xTranslation,
         yTranslation,
-        zTranslation,
-        getColor: constantRGBA || getPointColor
+        zTranslation
       }
     );
   }
 
   _createGroundControlLayer() {
-    const {
-      groundPointData,
-      groundControl,
-      totalWeightsTexture,
-      colorTexture,
-      colorDomainTexture
-    } = this.state;
-    const {nullValue} = this.props;
+    const {totalWeightsTexture} = this.state;
 
-    if (!groundControl || !groundPointData || !totalWeightsTexture || !colorTexture) {
+    const {nullValue, gcpData, groundControl, colorTexture, colorDomainTexture} = this.props;
+
+    if (!groundControl || !gcpData || !totalWeightsTexture || !colorTexture) {
       return null;
     }
 
@@ -683,7 +526,7 @@ export default class Roames3DLayer extends CompositeLayer {
 
     return new SubLayerClass({
       id: `${this.id}-roames-ground-control`,
-      data: groundPointData,
+      data: gcpData,
       heightTexture: totalWeightsTexture,
       pickable: true,
       iconAtlas:
@@ -713,27 +556,27 @@ export default class Roames3DLayer extends CompositeLayer {
   }
 
   _createPointCloudTileLayer(tileHeader) {
-    const {
-      attributes,
-      pointCount,
-      // constantRGBA,
-      cartographicOrigin,
-      modelMatrix
-    } = tileHeader.content;
-    const {
-      positions,
-      gpsPositions,
-      gpsDirections,
-      normals
-      // colors
-    } = attributes;
+    const {attributes, pointCount, cartographicOrigin, modelMatrix} = tileHeader.content;
+    const {positions, gpsPositions, gpsDirections, normals, colors} = attributes;
 
     if (!positions || !gpsPositions || !gpsDirections) {
       return null;
     }
 
-    const {pointSize, getPointColor} = this.props;
-    const {bounds} = this.state;
+    const {pointSize, pointColor, xTranslation, yTranslation, zTranslation, bounds} = this.props;
+    const {quaternion} = this.state;
+
+    const pcAttributes = {
+      POSITION: positions,
+      GPS_POSITION: gpsPositions,
+      GPS_DIRECTION: gpsDirections,
+      NORMAL: normals
+    };
+
+    if (!pointColor) {
+      pcAttributes['COLOR_0'] = colors;
+    }
+
     const SubLayerClass = this.getSubLayerClass('pointcloud', RoamesPointCloudLayer);
     return new SubLayerClass(
       {
@@ -748,19 +591,17 @@ export default class Roames3DLayer extends CompositeLayer {
           header: {
             vertexCount: pointCount
           },
-          attributes: {
-            POSITION: positions,
-            GPS_POSITION: gpsPositions,
-            GPS_DIRECTION: gpsDirections,
-            NORMAL: normals
-            // COLOR_0: colors
-          }
+          attributes: pcAttributes
         },
         coordinateSystem: COORDINATE_SYSTEM.METER_OFFSETS,
         coordinateOrigin: cartographicOrigin,
         modelMatrix,
         bounds,
-        getColor: getPointColor // constantRGBA ||
+        quaternion,
+        xTranslation,
+        yTranslation,
+        zTranslation,
+        getColor: pointColor
       }
     );
   }
@@ -777,7 +618,7 @@ export default class Roames3DLayer extends CompositeLayer {
     const boundVolume = tileHeader.header.boundingVolume.box;
     const z_shift = boundVolume[11];
 
-    const verticies = this._createBoundingBox(boundingVolumeCenter, boundVolume);
+    const verticies = createBoundingBox(boundingVolumeCenter, boundVolume);
     const data = [{polygon: verticies}];
 
     const SubLayerClass = this.getSubLayerClass('polygonlayer', PolygonLayer);
@@ -835,7 +676,6 @@ export default class Roames3DLayer extends CompositeLayer {
         coordinateSystem: COORDINATE_SYSTEM.METER_OFFSETS,
         coordinateOrigin: cartographicOrigin,
         modelMatrix,
-
         getColor: constantRGBA || getPointColor
       }
     );
@@ -895,28 +735,23 @@ export default class Roames3DLayer extends CompositeLayer {
         }
       }
 
-      const {
-        rotationChanged,
-        xRotation,
-        yRotation,
-        zRotation,
-        translationChanged,
-        xTranslation,
-        yTranslation,
-        zTranslation,
-        bounds
-      } = this.state;
+      const {pointColorChanged, rotationChanged, translationChanged, boundsChanged} = this.state;
 
-      if (rotationChanged && (type === 'points' || type === 'height')) {
-        layer.updateRotation(xRotation, yRotation, zRotation);
+      if (rotationChanged || translationChanged) {
+        if (type === 'points') {
+          layer = this._createPointCloudTileLayer(tile);
+          layerMap[`${tile.id}-points`] = {layer, tile};
+        } else if (type === 'height') {
+          layer = this._createHeightTileLayer(tile);
+          layerMap[`${tile.id}-height`] = {layer, tile};
+        }
       }
 
-      if (translationChanged && (type === 'points' || type === 'height')) {
-        layer.updateTranslation(xTranslation, yTranslation, zTranslation);
-      }
-
-      if (bounds && type === 'points') {
-        layer.updateBounds(bounds);
+      if (pointColorChanged || boundsChanged) {
+        if (type === 'points') {
+          layer = this._createPointCloudTileLayer(tile);
+          layerMap[`${tile.id}-points`] = {layer, tile};
+        }
       }
 
       // update layer visibility
@@ -943,29 +778,10 @@ export default class Roames3DLayer extends CompositeLayer {
     }
 
     // hide non-selected tiles
-    // This section needs to be looked at a little more,
-    // Tile3D relies upon GeometricError to work out which tile level to load.
-    // This seems to be affecting which tile to show and which tiles to hide
     if (layer && layer.props && layer.props.visible) {
       // Still in tileset cache but doesn't need to render this frame. Keep the GPU resource bound but don't render it.
-      layer = layer.clone({visible: false});
-      if (type === 'bound') {
-        layerMap[`${tile.id}-bound`].layer = layer;
-      }
-
-      if (type === 'gps') {
-        layerMap[`${tile.id}-gps`].layer = layer;
-      }
-
-      if (type === 'points') {
-        layerMap[`${tile.id}-points`].layer = layer;
-      }
-
-      if (type === 'height') {
-        layerMap[`${tile.id}-height`].layer = layer;
-      }
+      this._hideSubLayer(tile, type);
     }
-    return layer;
   }
   /* eslint-enable complexity, max-statements */
 }

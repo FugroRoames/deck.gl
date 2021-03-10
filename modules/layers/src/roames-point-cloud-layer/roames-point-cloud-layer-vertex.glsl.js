@@ -31,9 +31,7 @@ attribute vec3 instancePickingColors;
 uniform float opacity;
 uniform float radiusPixels;
 
-uniform float xRotationRad;
-uniform float yRotationRad;
-uniform float zRotationRad;
+uniform vec4 quaternion;
 uniform float xTranslation;
 uniform float yTranslation;
 uniform float zTranslation;
@@ -72,14 +70,18 @@ float inBounds(vec4 e1, vec4 e2, vec4 p)
 }
 
 void main(void) {
-  vec4 gpsD = qNorm(gpsDirections);
-
-  vec4 q = toQaternion(zRotationRad, yRotationRad, xRotationRad);  
-  vec4 r = qm(gpsD, qm(q, qi(gpsD)));
-
-  vec4 t = qm(gpsD, qm(vec4(xTranslation, yTranslation, zTranslation, 0.), qi(gpsD)));
+  // Quaternion we want to apply in respect to the gps direction 
+  vec4 r = qm(gpsDirections, qm(quaternion, qi(gpsDirections)));
+  
+  // translation vector rotated in respect to the gps direction 
+  vec4 t = qm(gpsDirections, qm(vec4(xTranslation, yTranslation, zTranslation, 0.), qi(gpsDirections)));
+  
+  // vector from point to gps
   vec4 v = vec4(instancePositions-gpsPositions, 0.);
+  
+  // transformed point position
   vec3 p = qm(r, qm(v, qi(r))).xyz + gpsPositions + t.xyz;
+
   geometry.worldPosition = p;
   geometry.normal = project_normal(instanceNormals);
 

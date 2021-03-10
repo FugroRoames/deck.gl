@@ -65,7 +65,9 @@ class BoresightDemo extends Component {
     drawBoundingBox: {displayName: 'Draw Bounding Box', value: false, type: 'checkbox'},
     textureOne: {displayName: 'Texture 1', value: false, type: 'checkbox'},
     textureTwo: {displayName: 'Texture 2', value: false, type: 'checkbox'},
-    heightDiffTexture: {displayName: 'Height Difference Texture', value: true, type: 'checkbox'}
+    heightDiffTexture: {displayName: 'Height Difference Texture', value: true, type: 'checkbox'},
+    pointColorOne: {displayName: 'Color Points 1', value: true, type: 'checkbox'},
+    pointColorTwo: {displayName: 'Color Points 2', value: false, type: 'checkbox'}
     // https://roames-hpc-home.s3-ap-southeast-2.amazonaws.com/users/peteroloughlin/gpspos2/tileset.json
   };
 
@@ -144,6 +146,8 @@ class BoresightDemo extends Component {
     const textureOne = params.textureOne.value;
     const textureTwo = params.textureTwo.value;
     const heightDiffTexture = params.heightDiffTexture.value;
+    const pointColorOne = params.pointColorOne.value ? [255, 0, 0] : null;
+    const pointColorTwo = params.pointColorTwo.value ? [0, 255, 0] : null;
 
     return (
       <App
@@ -164,7 +168,8 @@ class BoresightDemo extends Component {
             points: pointsOne,
             gpsPoints: gpsPointsOne,
             groundControl: groundControlOne,
-            displayTexture: textureOne
+            displayTexture: textureOne,
+            pointColor: pointColorOne
           },
           [dataTwo]: {
             rotation: {
@@ -181,7 +186,8 @@ class BoresightDemo extends Component {
             points: pointsTwo,
             gpsPoints: gpsPointsTwo,
             groundControl: groundControlTwo,
-            displayTexture: textureTwo
+            displayTexture: textureTwo,
+            pointColor: pointColorTwo
           }
         }}
         colorDomain={[colorMin, colorMax]}

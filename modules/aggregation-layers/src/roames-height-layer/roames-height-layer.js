@@ -35,9 +35,7 @@ const defaultProps = {
   radiusPixels: {type: 'number', min: 1, max: 100, value: 5},
   threshold: {type: 'number', min: 0, max: 1, value: 0.05},
   totalWeightsTransform: null,
-  xRotation: 0,
-  yRotation: 0,
-  zRotation: 0,
+  quaternion: null,
   xTranslation: 0,
   yTranslation: 0,
   zTranslation: 0
@@ -88,17 +86,10 @@ export default class RoamesHeightLayer extends AggregationLayer {
     super.initializeState(DIMENSIONS);
     this._setupTextureParams();
     this._setupAttributes();
-    const {xRotation, yRotation, zRotation, xTranslation, yTranslation, zTranslation} = this.props;
-
-    const quaternion = this._toQaternion(xRotation, yRotation, zRotation);
 
     this.setState({
       supported: true,
       totalWeightsTransform,
-      quaternion,
-      xTranslation,
-      yTranslation,
-      zTranslation,
       oldVisible: true
     });
   }
@@ -143,21 +134,6 @@ export default class RoamesHeightLayer extends AggregationLayer {
     }
 
     this.setState({zoom: opts.context.viewport.zoom});
-  }
-
-  updateRotation(xRotation, yRotation, zRotation) {
-    if (!this.state) {
-      return;
-    }
-    const quaternion = this._toQaternion(xRotation, yRotation, zRotation);
-    this.setState({quaternion});
-  }
-
-  updateTranslation(xTranslation, yTranslation, zTranslation) {
-    if (!this.state) {
-      return;
-    }
-    this.setState({xTranslation, yTranslation, zTranslation});
   }
 
   // PRIVATE
@@ -232,17 +208,17 @@ export default class RoamesHeightLayer extends AggregationLayer {
   }
 
   _updateWeightmap() {
-    const {radiusPixels, coordinateSystem, coordinateOrigin} = this.props;
-    const {viewport} = this.context;
     const {
-      totalWeightsTransform,
-      worldBounds,
-      textureSize,
+      radiusPixels,
+      coordinateSystem,
+      coordinateOrigin,
       quaternion,
       xTranslation,
       yTranslation,
       zTranslation
-    } = this.state;
+    } = this.props;
+    const {viewport} = this.context;
+    const {totalWeightsTransform, worldBounds, textureSize} = this.state;
 
     // convert world bounds to common using Layer's coordiante system and origin
     const commonBounds = worldToCommonTextureBounds(
@@ -282,25 +258,6 @@ export default class RoamesHeightLayer extends AggregationLayer {
       moduleSettings: this.getModuleSettings()
     });
     this.setState({lastUpdate: Date.now()});
-  }
-
-  _toQaternion(xRotation, yRotation, zRotation) {
-    const xRotationRad = xRotation * (Math.PI / 180);
-    const yRotationRad = yRotation * (Math.PI / 180);
-    const zRotationRad = zRotation * (Math.PI / 180);
-
-    const cr = Math.cos(xRotationRad * 0.5);
-    const sr = Math.sin(xRotationRad * 0.5);
-    const cp = Math.cos(yRotationRad * 0.5);
-    const sp = Math.sin(yRotationRad * 0.5);
-    const cy = Math.cos(zRotationRad * 0.5);
-    const sy = Math.sin(zRotationRad * 0.5);
-    return [
-      sr * cp * cy - cr * sp * sy,
-      cr * sp * cy + sr * cp * sy,
-      cr * cp * sy - sr * sp * cy,
-      cr * cp * cy + sr * sp * sy
-    ];
   }
 }
 

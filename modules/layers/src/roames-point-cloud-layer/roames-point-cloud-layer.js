@@ -32,12 +32,10 @@ import {projectLongLatToLayerPosition} from '../../../core/src/utils/bound-utils
 const defaultProps = {
   sizeUnits: 'pixels',
   pointSize: {type: 'number', min: 0, value: 10}, //  point radius in pixels
-  xRotationRad: {type: 'number', value: 0}, //  point radius in pixels
-  yRotationRad: {type: 'number', value: 0}, //  point radius in pixels
-  zRotationRad: {type: 'number', value: 0}, //  point radius in pixels
-  xTranslation: {type: 'number', value: 0}, //  point radius in pixels
-  yTranslation: {type: 'number', value: 0}, //  point radius in pixels
-  zTranslation: {type: 'number', value: 0}, //  point radius in pixels
+  quaternion: null,
+  xTranslation: {type: 'number', value: 0},
+  yTranslation: {type: 'number', value: 0},
+  zTranslation: {type: 'number', value: 0},
   getPosition: {type: 'accessor', value: x => x.position},
   getGpsPosition: {type: 'accessor', value: x => [0, 0, 0]},
   getGpsDirection: {type: 'accessor', value: x => [0, 0, 0, 0]},
@@ -122,24 +120,6 @@ export default class RoamesPointCloudLayer extends Layer {
       }
     });
 
-    const {
-      xRotationRad,
-      yRotationRad,
-      zRotationRad,
-      xTranslation,
-      yTranslation,
-      zTranslation,
-      bounds
-    } = this.props;
-    this.setState({
-      xRotationRad,
-      yRotationRad,
-      zRotationRad,
-      xTranslation,
-      yTranslation,
-      zTranslation,
-      bounds
-    });
     /* eslint-enable max-len */
   }
 
@@ -160,16 +140,16 @@ export default class RoamesPointCloudLayer extends Layer {
 
   draw({uniforms}) {
     const {viewport} = this.context;
-    const {pointSize, sizeUnits} = this.props;
     const {
-      xRotationRad,
-      yRotationRad,
-      zRotationRad,
+      pointSize,
+      sizeUnits,
+      quaternion,
       xTranslation,
       yTranslation,
       zTranslation,
       bounds
-    } = this.state;
+    } = this.props;
+
     const sizeMultiplier = sizeUnits === 'meters' ? 1 / viewport.metersPerPixel : 1;
 
     let edge1 = [0, 0, 0, 0];
@@ -211,9 +191,7 @@ export default class RoamesPointCloudLayer extends Layer {
       .setUniforms(
         Object.assign({}, uniforms, {
           radiusPixels: pointSize * sizeMultiplier,
-          xRotationRad,
-          yRotationRad,
-          zRotationRad,
+          quaternion,
           xTranslation,
           yTranslation,
           zTranslation,
@@ -223,34 +201,6 @@ export default class RoamesPointCloudLayer extends Layer {
         })
       )
       .draw();
-  }
-
-  updateRotation(xRotation, yRotation, zRotation) {
-    if (!this.state) {
-      return;
-    }
-    const xRotationRad = xRotation * (Math.PI / 180);
-    const yRotationRad = yRotation * (Math.PI / 180);
-    const zRotationRad = zRotation * (Math.PI / 180);
-    this.setState({xRotationRad, yRotationRad, zRotationRad});
-  }
-
-  updateTranslation(xTranslation, yTranslation, zTranslation) {
-    if (!this.state) {
-      return;
-    }
-    this.setState({xTranslation, yTranslation, zTranslation});
-  }
-
-  updateBounds(bounds) {
-    if (!this.state) {
-      return;
-    }
-    if (Object.keys(bounds).length === 0) {
-      this.setState({bounds: null});
-    } else {
-      this.setState({bounds});
-    }
   }
 
   _getModel(gl) {
