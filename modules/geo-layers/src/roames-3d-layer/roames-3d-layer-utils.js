@@ -3,6 +3,7 @@ import GL from '@luma.gl/constants';
 import {Ellipsoid} from '@math.gl/geospatial';
 import {addMetersToLngLat} from '@math.gl/web-mercator';
 
+/* eslint-disable complexity, max-statements */
 export function getPropChange(props, oldProps) {
   let rotationChanged = false;
   if (
@@ -56,6 +57,7 @@ export function getPropChange(props, oldProps) {
     boundsChanged
   };
 }
+/* eslint-enable complexity, max-statements */
 
 export function getHeightRange(tileHeader) {
   const boundingVolumeCenter = tileHeader.cartesianCenter;

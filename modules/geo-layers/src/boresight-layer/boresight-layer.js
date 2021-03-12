@@ -103,8 +103,6 @@ export default class BoresightLayer extends CompositeLayer {
 
   /* eslint-disable complexity, max-statements */
   updateState(opts) {
-    const {props, oldProps} = opts;
-
     // update state everytime ..?
     const {viewport} = this.context;
     const {worldBounds, textureSize} = this.state;
@@ -225,9 +223,12 @@ export default class BoresightLayer extends CompositeLayer {
     }
 
     // Create bounds for DH layer if needed
-    const polyLayer = this._createBoundBoxLayer();
-    if (polyLayer) {
-      subLayers.push(polyLayer);
+    const {getBoundBox} = this.props;
+    if (getBoundBox.interEnd || getBoundBox.end) {
+      const polyLayer = this._createBoundBoxLayer();
+      if (polyLayer) {
+        subLayers.push(polyLayer);
+      }
     }
 
     return subLayers;
@@ -340,7 +341,7 @@ export default class BoresightLayer extends CompositeLayer {
   _createBoundBoxLayer() {
     const {getBoundBox} = this.props;
     if (!getBoundBox.interEnd && !getBoundBox.end) {
-      return;
+      return null;
     }
     const start = getBoundBox.start;
     const end = getBoundBox.end;

@@ -104,6 +104,7 @@ export default class Roames3DLayer extends CompositeLayer {
     return changeFlags.somethingChanged;
   }
 
+  /* eslint-disable complexity, max-statements */
   updateState(opts) {
     const {props, oldProps} = opts;
 
@@ -163,6 +164,7 @@ export default class Roames3DLayer extends CompositeLayer {
       }
     }
   }
+  /* eslint-enable complexity, max-statements */
 
   renderLayers() {
     const {tileset3d} = this.state;
@@ -574,7 +576,7 @@ export default class Roames3DLayer extends CompositeLayer {
     };
 
     if (!pointColor) {
-      pcAttributes['COLOR_0'] = colors;
+      pcAttributes.COLOR_0 = colors;
     }
 
     const SubLayerClass = this.getSubLayerClass('pointcloud', RoamesPointCloudLayer);
@@ -782,6 +784,7 @@ export default class Roames3DLayer extends CompositeLayer {
       // Still in tileset cache but doesn't need to render this frame. Keep the GPU resource bound but don't render it.
       this._hideSubLayer(tile, type);
     }
+    return null;
   }
   /* eslint-enable complexity, max-statements */
 }
