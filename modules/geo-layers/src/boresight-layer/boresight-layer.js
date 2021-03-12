@@ -127,7 +127,7 @@ export default class BoresightLayer extends CompositeLayer {
     // Check to see if the bounding box for the points needs to be reset
     const {getBoundBox} = this.props;
     if (Object.keys(getBoundBox).length === 0) {
-      this.setState({bounds: {}});
+      this.setState({bounds: null});
     }
   }
   /* eslint-enable complexity, max-statements */
