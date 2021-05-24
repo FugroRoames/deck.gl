@@ -53,7 +53,7 @@ export default class WebMercatorViewport extends Viewport {
       nearZMultiplier = 0.1,
       farZMultiplier = 1.01,
       orthographic = false,
-
+      target = null,
       repeat = false,
       worldOffset = 0
     } = opts;
@@ -113,7 +113,8 @@ export default class WebMercatorViewport extends Viewport {
       // TODO Viewport is already carefully set up to "focus" on ground, so can't use focal distance
       focalDistance: orthographic ? focalDistance : 1,
       near,
-      far
+      far,
+      position: target
     });
 
     super(viewportOpts);

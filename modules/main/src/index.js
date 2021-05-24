@@ -48,6 +48,8 @@ export {
   OrbitController,
   FirstPersonController,
   OrthographicController,
+  HorizontalOrthoController,
+  MapBoundController,
   _GlobeController,
   // For custom layers
   AttributeManager,
@@ -101,7 +103,9 @@ export {
   PolygonLayer,
   SolidPolygonLayer,
   GeoJsonLayer,
-  TextLayer
+  TextLayer,
+  RoamesPointCloudLayer,
+  RoamesIconLayer
 } from '@deck.gl/layers';
 
 export {
@@ -112,7 +116,8 @@ export {
   GridLayer,
   GPUGridLayer,
   AGGREGATION_OPERATION,
-  HeatmapLayer
+  HeatmapLayer,
+  RoamesHeightLayer
 } from '@deck.gl/aggregation-layers';
 
 export {
@@ -124,7 +129,9 @@ export {
   TripsLayer,
   Tile3DLayer,
   TerrainLayer,
-  MVTLayer
+  MVTLayer,
+  Roames3DLayer,
+  BoresightLayer
 } from '@deck.gl/geo-layers';
 
 export {SimpleMeshLayer, ScenegraphLayer} from '@deck.gl/mesh-layers';

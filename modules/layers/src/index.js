@@ -36,3 +36,7 @@ export {default as SolidPolygonLayer} from './solid-polygon-layer/solid-polygon-
 
 // Experimental layer exports
 export {default as _MultiIconLayer} from './text-layer/multi-icon-layer/multi-icon-layer';
+export {
+  default as RoamesPointCloudLayer
+} from './roames-point-cloud-layer/roames-point-cloud-layer';
+export {default as RoamesIconLayer} from './roames-icon-layer/roames-icon-layer';

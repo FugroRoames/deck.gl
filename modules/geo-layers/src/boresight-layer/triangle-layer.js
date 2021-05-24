@@ -21,13 +21,14 @@
 import GL from '@luma.gl/constants';
 import {Model, Geometry} from '@luma.gl/core';
 import {Layer, project32} from '@deck.gl/core';
-import vs from './triangle-layer-vertex.glsl';
-import fs from './triangle-layer-fragment.glsl';
+import vs from './boresight-vs.glsl';
+import fs from './boresight-fs.glsl';
 
 const defaultProps = {
   count: 0, // number of triangles to be rendered
-  texture: null,
-  onRedraw: {type: 'function', value: null, compare: false}
+  nullValue: 0,
+  textureone: null,
+  texturetwo: null
 };
 
 export default class TriangleLayer extends Layer {
@@ -64,32 +65,16 @@ export default class TriangleLayer extends Layer {
 
   draw({uniforms}) {
     const {model} = this.state;
-
-    const {
-      texture,
-      maxTexture,
-      colorTexture,
-      intensity,
-      threshold,
-      aggregationMode,
-      colorDomain,
-      onRedraw
-    } = this.props;
-
-    if (onRedraw) {
-      onRedraw();
-    }
-
+    const {textureone, texturetwo, colorTexture, colorDomainTexture, nullValue} = this.props;
     model
       .setUniforms({
         ...uniforms,
-        texture,
-        maxTexture,
+        textureone,
+        texturetwo,
         colorTexture,
-        intensity,
-        threshold,
-        aggregationMode,
-        colorDomain
+        colorDomainTexture,
+        nullValue,
+        colorDomainSize: colorDomainTexture.width
       })
       .draw();
   }

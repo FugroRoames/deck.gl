@@ -21,16 +21,15 @@
 import GL from '@luma.gl/constants';
 import {Model, Geometry} from '@luma.gl/core';
 import {Layer, project32} from '@deck.gl/core';
-import vs from './triangle-layer-vertex.glsl';
-import fs from './triangle-layer-fragment.glsl';
+import vs from './debug-triangle-layer-vertex.glsl';
+import fs from './debug-triangle-layer-fragment.glsl';
 
 const defaultProps = {
   count: 0, // number of triangles to be rendered
-  texture: null,
-  onRedraw: {type: 'function', value: null, compare: false}
+  texture: null
 };
 
-export default class TriangleLayer extends Layer {
+export default class DebugTriangleLayer extends Layer {
   getShaders() {
     return {vs, fs, modules: [project32]};
   }
@@ -64,36 +63,17 @@ export default class TriangleLayer extends Layer {
 
   draw({uniforms}) {
     const {model} = this.state;
-
-    const {
-      texture,
-      maxTexture,
-      colorTexture,
-      intensity,
-      threshold,
-      aggregationMode,
-      colorDomain,
-      onRedraw
-    } = this.props;
-
-    if (onRedraw) {
-      onRedraw();
-    }
-
+    const {texture, colorTexture, colorDomain} = this.props;
     model
       .setUniforms({
         ...uniforms,
         texture,
-        maxTexture,
         colorTexture,
-        intensity,
-        threshold,
-        aggregationMode,
         colorDomain
       })
       .draw();
   }
 }
 
-TriangleLayer.layerName = 'TriangleLayer';
-TriangleLayer.defaultProps = defaultProps;
+DebugTriangleLayer.layerName = 'DebugTriangleLayer';
+DebugTriangleLayer.defaultProps = defaultProps;

@@ -29,3 +29,4 @@ package-lock.json
 *.rar
 *.log
 .exit_code
+test.txt
